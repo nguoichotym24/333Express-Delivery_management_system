@@ -1,0 +1,26 @@
+{
+  "warehouses": [
+    {
+      "id": "hub_1",
+      "code": "WH_HCMC_01",
+      "name": "Kho TP.HCM",
+      "address": "789 Đường Võ Văn Kiệt, TP.HCM",
+      "coordinates": { "lat": 10.7538, "lng": 106.6789 },
+      "capacity": 5000,
+      "currentLoad": 3200,
+      "managerId": "user_3",
+      "phone": "0923456789"
+    },
+    {
+      "id": "hub_2",
+      "code": "WH_HN_01",
+      "name": "Kho Hà Nội",
+      "address": "456 Đường Trần Hưng Đạo, Hà Nội",
+      "coordinates": { "lat": 21.0285, "lng": 105.8542 },
+      "capacity": 4000,
+      "currentLoad": 2100,
+      "managerId": "user_3",
+      "phone": "0923456789"
+    }
+  ]
+}

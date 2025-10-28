@@ -1,0 +1,69 @@
+{
+  "orders": [
+    {
+      "id": "ORD_001",
+      "trackingNumber": "DH001234567890",
+      "sellerId": "user_2",
+      "customerId": "user_1",
+      "status": "in_transit",
+      "createdAt": "2025-10-15T10:00:00Z",
+      "updatedAt": "2025-10-19T14:30:00Z",
+      "items": [
+        {
+          "id": "item_1",
+          "name": "Laptop Dell XPS 13",
+          "quantity": 1,
+          "price": 25000000,
+          "image": "/placeholder.svg?height=200&width=200"
+        }
+      ],
+      "totalAmount": 25000000,
+      "shippingFee": 50000,
+      "senderInfo": {
+        "name": "Cửa hàng ABC",
+        "phone": "0912345678",
+        "address": "456 Đường Nguyễn Huệ, TP.HCM",
+        "coordinates": { "lat": 10.7769, "lng": 106.7009 }
+      },
+      "receiverInfo": {
+        "name": "Nguyễn Văn A",
+        "phone": "0901234567",
+        "address": "123 Đường Lê Lợi, TP.HCM",
+        "coordinates": { "lat": 10.7626, "lng": 106.6955 }
+      },
+      "shipperId": "user_4",
+      "warehouseHubs": [
+        {
+          "id": "hub_1",
+          "name": "Kho TP.HCM",
+          "address": "789 Đường Võ Văn Kiệt, TP.HCM",
+          "coordinates": { "lat": 10.7538, "lng": 106.6789 },
+          "arrivedAt": "2025-10-18T08:00:00Z",
+          "departedAt": "2025-10-19T10:00:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "status": "order_created",
+          "timestamp": "2025-10-15T10:00:00Z",
+          "description": "Đơn hàng được tạo"
+        },
+        {
+          "status": "picked_up",
+          "timestamp": "2025-10-15T14:00:00Z",
+          "description": "Hàng được lấy từ cửa hàng"
+        },
+        {
+          "status": "at_warehouse",
+          "timestamp": "2025-10-18T08:00:00Z",
+          "description": "Hàng đã đến kho"
+        },
+        {
+          "status": "in_transit",
+          "timestamp": "2025-10-19T10:00:00Z",
+          "description": "Hàng đang được giao"
+        }
+      ]
+    }
+  ]
+}

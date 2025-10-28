@@ -1,0 +1,44 @@
+{
+  "users": [
+    {
+      "id": "user_1",
+      "email": "customer@example.com",
+      "password": "password123",
+      "name": "Nguyễn Văn A",
+      "role": "customer",
+      "phone": "0901234567",
+      "address": "123 Đường Lê Lợi, TP.HCM"
+    },
+    {
+      "id": "user_3",
+      "email": "warehouse@example.com",
+      "password": "password123",
+      "name": "Kho TP.HCM",
+      "role": "warehouse",
+      "phone": "0923456789",
+      "address": "789 Đường Võ Văn Kiệt, TP.HCM",
+      "warehouseCode": "WH_HCMC_01",
+      "capacity": 5000
+    },
+    {
+      "id": "user_4",
+      "email": "shipper@example.com",
+      "password": "password123",
+      "name": "Trần Văn B",
+      "role": "shipper",
+      "phone": "0934567890",
+      "address": "321 Đường Cách Mạng Tháng 8, TP.HCM",
+      "vehicleType": "motorcycle",
+      "vehicleNumber": "51A-12345"
+    },
+    {
+      "id": "user_5",
+      "email": "admin@example.com",
+      "password": "password123",
+      "name": "Admin System",
+      "role": "admin",
+      "phone": "0945678901",
+      "address": "999 Đường Trần Hưng Đạo, TP.HCM"
+    }
+  ]
+}

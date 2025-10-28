@@ -1,0 +1,21 @@
+{
+  "shippers": [
+    {
+      "id": "user_4",
+      "name": "Trần Văn B",
+      "phone": "0934567890",
+      "vehicleType": "motorcycle",
+      "vehicleNumber": "51A-12345",
+      "status": "available",
+      "currentLocation": { "lat": 10.7626, "lng": 106.6955 },
+      "totalDeliveries": 245,
+      "successRate": 98.5,
+      "rating": 4.8,
+      "earnings": {
+        "total": 15000000,
+        "thisMonth": 2500000,
+        "pending": 500000
+      }
+    }
+  ]
+}
