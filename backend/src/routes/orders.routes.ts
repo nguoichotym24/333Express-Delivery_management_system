@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { requireAuth, requireRole } from '../middleware/auth'
-import { createOrderHandler, getOrderHandler, publicTrackHandler, updateStatusHandler, routeHandler } from '../controllers/orders.controller'
+import { createOrderHandler, getOrderHandler, publicTrackHandler, updateStatusHandler, routeHandler, listByWarehouseHandler, listByShipperMeHandler } from '../controllers/orders.controller'
 
 const router = Router()
 
@@ -13,5 +13,8 @@ router.post('/', requireAuth, requireRole('customer', 'admin'), createOrderHandl
 router.get('/:id', requireAuth, getOrderHandler)
 router.patch('/:id/status', requireAuth, requireRole('warehouse', 'shipper', 'admin'), updateStatusHandler)
 
-export default router
+// listings
+router.get('/warehouse/:id', requireAuth, requireRole('warehouse', 'admin'), listByWarehouseHandler)
+router.get('/shipper/me', requireAuth, requireRole('shipper', 'admin'), listByShipperMeHandler)
 
+export default router

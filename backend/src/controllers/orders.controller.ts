@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { createOrder, getOrderById, getOrderByTracking, updateOrderStatus, computeRouteForTracking } from '../services/orders.service'
+import { pool } from '../db/pool'
 
 export async function createOrderHandler(req: Request, res: Response) {
   const userId = req.user!.id
@@ -38,3 +39,35 @@ export async function updateStatusHandler(req: Request, res: Response) {
   res.json(order)
 }
 
+export async function listByWarehouseHandler(req: Request, res: Response) {
+  const warehouseId = Number(req.params.id)
+  if (!warehouseId) return res.status(400).json({ error: 'Invalid warehouse id' })
+  const [rows] = await pool.query(
+    `SELECT o.order_id, o.tracking_code, s.code AS current_status,
+            o.sender_lat, o.sender_lng, o.receiver_lat, o.receiver_lng,
+            o.created_at
+     FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE o.current_warehouse_id = ?
+     ORDER BY o.created_at DESC
+     LIMIT 200`,
+    [warehouseId]
+  )
+  res.json(rows)
+}
+
+export async function listByShipperMeHandler(req: Request, res: Response) {
+  const shipperId = req.user!.id
+  const [rows] = await pool.query(
+    `SELECT o.order_id, o.tracking_code, s.code AS current_status,
+            o.sender_lat, o.sender_lng, o.receiver_lat, o.receiver_lng,
+            o.created_at
+     FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE o.shipper_user_id = ?
+     ORDER BY o.created_at DESC
+     LIMIT 200`,
+    [shipperId]
+  )
+  res.json(rows)
+}

@@ -1,80 +1,119 @@
 "use client"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import orders from "@/data/orders.json"
+import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
+
+const RouteMap = dynamic(() => import("@/components/map/route-map-client"), { ssr: false })
+
+type Warehouse = { id: number; code: string; name: string; lat: number; lng: number }
+type OrderRow = {
+  order_id: number
+  tracking_code: string
+  current_status: string
+  sender_lat: number
+  sender_lng: number
+  receiver_lat: number
+  receiver_lng: number
+  created_at: string
+}
 
 export default function TrackingPage() {
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      order_created: "bg-blue-500/10 text-blue-400",
-      picked_up: "bg-purple-500/10 text-purple-400",
-      at_warehouse: "bg-yellow-500/10 text-yellow-400",
-      in_transit: "bg-cyan-500/10 text-cyan-400",
-      delivered: "bg-green-500/10 text-green-400",
-    }
-    return colors[status] || "bg-gray-500/10 text-gray-400"
-  }
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [whId, setWhId] = useState<number | null>(null)
+  const [rows, setRows] = useState<OrderRow[]>([])
+  const [selected, setSelected] = useState<OrderRow | null>(null)
+  const [route, setRoute] = useState<any | null>(null)
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      order_created: "Đơn hàng được tạo",
-      picked_up: "Hàng được lấy",
-      at_warehouse: "Tại kho",
-      in_transit: "Đang giao",
-      delivered: "Đã giao",
-    }
-    return labels[status] || status
-  }
+  useEffect(() => {
+    fetch('/api/warehouses')
+      .then(r => r.json())
+      .then((list) => {
+        const ws = list.map((w: any) => ({ id: w.id, code: w.code, name: w.name, lat: Number(w.lat), lng: Number(w.lng) }))
+        setWarehouses(ws)
+        if (ws.length && whId === null) setWhId(ws[0].id)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!whId) return
+    setSelected(null)
+    setRoute(null)
+    fetch(`/api/orders/warehouse/${whId}`)
+      .then(r => r.json())
+      .then((data) => setRows(data))
+      .catch(() => setRows([]))
+  }, [whId])
+
+  useEffect(() => {
+    if (!selected) return
+    fetch(`/api/orders/${encodeURIComponent(selected.tracking_code)}/route`)
+      .then(r => r.json())
+      .then(setRoute)
+      .catch(() => setRoute(null))
+  }, [selected])
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold mb-2">Theo dõi hàng trong kho</h1>
-          <p className="text-secondary">Xem trạng thái hàng hóa trong kho</p>
+          <p className="text-secondary">Xem trạng thái và vị trí hàng hoá theo kho</p>
         </div>
 
-        {/* Orders Table */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-secondary">Kho</label>
+          <select
+            className="bg-background border border-default rounded-lg px-3 py-2 text-sm"
+            value={whId ?? ''}
+            onChange={(e) => setWhId(Number(e.target.value))}
+          >
+            {warehouses.map(w => (
+              <option key={w.id} value={w.id}>{w.name} ({w.code})</option>
+            ))}
+          </select>
+        </div>
+
         <div className="bg-surface border border-default rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-default">
                   <th className="px-6 py-4 text-left text-sm font-semibold">Mã vận đơn</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Người nhận</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Trạng thái</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Số sản phẩm</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Giá trị</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Ngày tạo</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.orders.map((order: any) => (
-                  <tr key={order.id} className="border-b border-default hover:bg-background transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-primary">{order.trackingNumber}</td>
-                    <td className="px-6 py-4 text-sm">{order.receiverInfo.name}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-lg text-xs font-medium ${getStatusColor(order.status)}`}
-                      >
-                        {getStatusLabel(order.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">{order.items.length}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-primary">
-                      {order.totalAmount.toLocaleString("vi-VN")} đ
-                    </td>
-                    <td className="px-6 py-4 text-sm text-secondary">
-                      {new Date(order.createdAt).toLocaleDateString("vi-VN")}
-                    </td>
+                {rows.map((order) => (
+                  <tr key={order.order_id} className="border-b border-default hover:bg-background transition-colors cursor-pointer" onClick={() => setSelected(order)}>
+                    <td className="px-6 py-4 text-sm font-medium text-primary">{order.tracking_code}</td>
+                    <td className="px-6 py-4 text-sm">{order.current_status}</td>
+                    <td className="px-6 py-4 text-sm text-secondary">{new Date(order.created_at).toLocaleDateString('vi-VN')}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
+
+        <div className="bg-surface border border-default rounded-xl p-6">
+          <h2 className="text-xl font-bold mb-4">Bản đồ</h2>
+          {route ? (
+            <RouteMap
+              height={360}
+              sender={route.sender}
+              receiver={route.receiver}
+              currentWarehouse={route.currentWarehouse || undefined}
+              route={route.route}
+            />
+          ) : (
+            <p className="text-secondary text-sm">Chọn một đơn để xem tuyến đường.</p>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   )
 }
+
