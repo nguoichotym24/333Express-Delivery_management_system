@@ -107,6 +107,8 @@ export default function TrackingPage() {
               receiver={route.receiver}
               currentWarehouse={route.currentWarehouse || undefined}
               route={route.route}
+              followRoads
+              lastUpdate={route.currentWarehouse || undefined}
             />
           ) : (
             <p className="text-secondary text-sm">Chọn một đơn để xem tuyến đường.</p>
@@ -116,4 +118,3 @@ export default function TrackingPage() {
     </DashboardLayout>
   )
 }
-

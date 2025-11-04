@@ -193,6 +193,8 @@ export default function TrackingPage() {
                   receiver={route.receiver}
                   currentWarehouse={route.currentWarehouse || undefined}
                   route={route.route}
+                  followRoads
+                  lastUpdate={route.currentWarehouse || undefined}
                 />
               ) : (
                 <p className="text-secondary text-sm">Không có dữ liệu bản đồ</p>
