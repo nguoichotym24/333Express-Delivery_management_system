@@ -18,6 +18,25 @@ type OrderRow = {
   created_at: string
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  created: 'Người gửi đã tạo đơn',
+  waiting_for_pickup: 'Chờ lấy hàng',
+  picked_up: 'Đã lấy hàng',
+  arrived_at_origin_hub: 'Đã đến kho gửi',
+  in_transit_to_sorting_center: 'Đang đến kho trung tâm',
+  arrived_at_sorting_hub: 'Đã đến kho trung tâm',
+  in_transit_to_destination_hub: 'Đang đến kho đích',
+  arrived_at_destination_hub: 'Đã đến kho đích',
+  out_for_delivery: 'Đang giao hàng',
+  delivered: 'Giao hàng thành công',
+  delivery_failed: 'Giao hàng thất bại',
+  returned_to_destination_hub: 'Trả về kho đích',
+  return_in_transit: 'Đang hoàn hàng',
+  returned_to_origin: 'Đã hoàn về kho gửi',
+  cancelled: 'Đã hủy',
+  lost: 'Thất lạc',
+}
+
 export default function TrackingPage() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [whId, setWhId] = useState<number | null>(null)
@@ -89,7 +108,7 @@ export default function TrackingPage() {
                 {rows.map((order) => (
                   <tr key={order.order_id} className="border-b border-default hover:bg-background transition-colors cursor-pointer" onClick={() => setSelected(order)}>
                     <td className="px-6 py-4 text-sm font-medium text-primary">{order.tracking_code}</td>
-                    <td className="px-6 py-4 text-sm">{order.current_status}</td>
+                    <td className="px-6 py-4 text-sm">{STATUS_LABELS[order.current_status] || order.current_status}</td>
                     <td className="px-6 py-4 text-sm text-secondary">{new Date(order.created_at).toLocaleDateString('vi-VN')}</td>
                   </tr>
                 ))}
@@ -108,7 +127,7 @@ export default function TrackingPage() {
               currentWarehouse={route.currentWarehouse || undefined}
               route={route.route}
               followRoads
-              lastUpdate={route.currentWarehouse || undefined}
+              lastUpdate={(route as any).lastUpdate || route.currentWarehouse || undefined}
             />
           ) : (
             <p className="text-secondary text-sm">Chọn một đơn để xem tuyến đường.</p>

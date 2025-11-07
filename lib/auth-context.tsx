@@ -13,6 +13,7 @@ export interface User {
   role: UserRole
   phone?: string
   address?: string
+  warehouse_id?: number
 }
 
 interface AuthContextType {

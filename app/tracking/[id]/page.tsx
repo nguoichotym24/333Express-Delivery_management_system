@@ -13,6 +13,7 @@ type OrderHistoryItem = {
   status: string
   note: string | null
   warehouse_id: number | null
+  warehouse_name?: string | null
   created_at: string
 }
 
@@ -40,7 +41,7 @@ type RouteResponse = {
 const RouteMap = dynamic(() => import("@/components/map/route-map-client"), { ssr: false })
 
 const STATUS_LABELS: Record<string, string> = {
-  created: "Đã tạo đơn",
+  created: "Người gửi đã tạo đơn",
   waiting_for_pickup: "Chờ lấy hàng",
   picked_up: "Đã lấy hàng",
   arrived_at_origin_hub: "Đã đến kho gửi",
@@ -92,11 +93,11 @@ export default function TrackingPage() {
 
   const timeline = useMemo(() => {
     if (!order) return [] as Array<{ label: string; time: Date; status: string }>
-    return order.history.map((h) => ({
-      status: h.status,
-      label: STATUS_LABELS[h.status] || h.status,
-      time: new Date(h.created_at),
-    }))
+    return order.history.map((h: OrderHistoryItem) => {
+      const base = STATUS_LABELS[h.status] || h.status
+      const label = h.status === 'created' ? base : (h.warehouse_name ? `${base} — ${h.warehouse_name}` : base)
+      return { status: h.status, label, time: new Date(h.created_at) }
+    })
   }, [order])
 
   if (loading) {
@@ -194,7 +195,7 @@ export default function TrackingPage() {
                   currentWarehouse={route.currentWarehouse || undefined}
                   route={route.route}
                   followRoads
-                  lastUpdate={route.currentWarehouse || undefined}
+                  lastUpdate={(route as any).lastUpdate || route.currentWarehouse || undefined}
                 />
               ) : (
                 <p className="text-secondary text-sm">Không có dữ liệu bản đồ</p>
@@ -206,7 +207,12 @@ export default function TrackingPage() {
             <div className="bg-surface border border-default rounded-xl p-6 sticky top-6">
               <h3 className="text-lg font-bold mb-4">Trạng thái</h3>
               <div className="bg-primary/10 border border-primary rounded-lg p-4 mb-6">
-                <p className="text-primary font-semibold text-center">{STATUS_LABELS[order.current_status] || order.current_status}</p>
+                {(() => {
+                  const base = STATUS_LABELS[order.current_status] || order.current_status
+                  const last = order.history?.length ? (order.history[order.history.length - 1] as OrderHistoryItem) : null
+                  const text = order.current_status === 'created' ? base : (last?.warehouse_name ? `${base} — ${last.warehouse_name}` : base)
+                  return <p className="text-primary font-semibold text-center">{text}</p>
+                })()}
               </div>
 
               <div className="space-y-4">

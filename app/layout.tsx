@@ -1,27 +1,32 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { AuthProvider } from "@/lib/auth-context"
-import { ThemeProvider } from "@/lib/theme-context"
+import type React from "react";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { ThemeProvider } from "@/lib/theme-context";
 
 const interSans = Inter({
   variable: "--font-inter-sans",
   subsets: ["latin", "latin-ext", "vietnamese"],
   preload: true,
-})
+});
 
 export const metadata: Metadata = {
-  title: "DeliveryHub - Delivery Management System",
+  icons: {
+    icon: "333.png",
+    apple: "333.png",
+    shortcut: "333.png",
+  },
+  title: "333EXPRESS",
   description: "Modern delivery management platform",
   charset: "utf-8",
-    generator: 'v0.app'
-}
+  generator: "v0.app",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="vi" suppressHydrationWarning>
@@ -35,5 +40,5 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

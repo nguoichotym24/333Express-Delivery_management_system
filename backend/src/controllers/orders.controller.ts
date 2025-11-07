@@ -45,7 +45,7 @@ export async function listByWarehouseHandler(req: Request, res: Response) {
   const [rows] = await pool.query(
     `SELECT o.order_id, o.tracking_code, s.code AS current_status,
             o.sender_lat, o.sender_lng, o.receiver_lat, o.receiver_lng,
-            o.created_at
+            o.created_at, o.shipper_user_id
      FROM orders o
      JOIN order_statuses s ON s.order_status_id = o.current_status_id
      WHERE o.current_warehouse_id = ?
@@ -70,4 +70,40 @@ export async function listByShipperMeHandler(req: Request, res: Response) {
     [shipperId]
   )
   res.json(rows)
+}
+
+export async function assignShipperHandler(req: Request, res: Response) {
+  const orderId = Number(req.params.id)
+  const { shipper_user_id } = req.body || {}
+  if (!orderId || !shipper_user_id) return res.status(400).json({ error: 'Missing orderId or shipper_user_id' })
+
+  // Validate order exists
+  const [orderRows] = await pool.query('SELECT order_id, shipper_user_id FROM orders WHERE order_id = ? LIMIT 1', [orderId])
+  const orderRow = (orderRows as any[])[0]
+  if (!orderRow) return res.status(404).json({ error: 'Order not found' })
+
+  // Enforce single shipper per order unless same shipper or forced by admin
+  const alreadyAssigned = orderRow.shipper_user_id as number | null
+  const isSame = alreadyAssigned && Number(alreadyAssigned) === Number(shipper_user_id)
+  const force = String(req.query.force || '').toLowerCase() === '1'
+  if (alreadyAssigned && !isSame && !force) {
+    return res.status(409).json({ error: 'Order already assigned to a shipper' })
+  }
+
+  // Validate shipper
+  const [shipperRows] = await pool.query('SELECT user_id, role FROM users WHERE user_id = ? LIMIT 1', [shipper_user_id])
+  const shipper = (shipperRows as any[])[0]
+  if (!shipper || shipper.role !== 'shipper') return res.status(400).json({ error: 'Invalid shipper' })
+
+  // Upsert assignment and update order
+  await pool.query('UPDATE orders SET shipper_user_id = ? WHERE order_id = ?', [shipper_user_id, orderId])
+  await pool.query(
+    `INSERT INTO order_assignments (order_id, shipper_user_id, assigned_by_user_id)
+     VALUES (?,?,?)
+     ON DUPLICATE KEY UPDATE shipper_user_id = VALUES(shipper_user_id), assigned_by_user_id = VALUES(assigned_by_user_id), assigned_at = NOW()`,
+    [orderId, shipper_user_id, req.user!.id]
+  )
+
+  const order = await getOrderById(orderId)
+  res.json(order)
 }

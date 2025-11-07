@@ -35,7 +35,7 @@ INSERT INTO warehouses (code, name, province, region, address, lat, lng, capacit
 
 -- Users (password: password123)
 -- bcrypt hash for 'password123' generated with 10 rounds
-SET @pwd := '$2a$10$7Nn4S9zquCwIRZbEffw6ZOp0d1XXxQjQ2m4l1iF2l2j6n7n6YVd5S';
+SET @pwd := '$2a$10$VJX81fZAbu5pLGitymWT5.5fDjwgYT8zG0LA6Vcuw/e6Q6v1IFGEe';
 
 INSERT INTO users (email, password_hash, name, role, phone, address, warehouse_id) VALUES
 ('customer@example.com', @pwd, 'Nguyễn Văn A', 'customer', '0901234567', '123 Lê Lợi, TP.HCM', NULL),
@@ -50,6 +50,11 @@ INSERT INTO users (email, password_hash, name, role, phone, address, warehouse_i
 ('warehouse2@example.com', @pwd, 'Kho Da Nang', 'warehouse', '0911111222', 'Thanh Khe, Da Nang', (SELECT warehouse_id FROM warehouses WHERE code='WH_DN_TK')),
 ('shipper2@example.com', @pwd, 'Le Van C', 'shipper', '0939999888', 'Da Nang', (SELECT warehouse_id FROM warehouses WHERE code='WH_DN_TK')),
 ('shipper_hn@example.com', @pwd, 'Do Van D', 'shipper', '0937777666', 'Ha Noi', (SELECT warehouse_id FROM warehouses WHERE code='WH_LB'));
+
+-- Extra shippers for HCMC (WH_Q3)
+INSERT INTO users (email, password_hash, name, role, phone, address, warehouse_id) VALUES
+('shipper_hcm2@example.com', @pwd, 'Nguyen Van C', 'shipper', '0931111222', 'HCMC', (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3')),
+('shipper_hcm3@example.com', @pwd, 'Pham Thi D', 'shipper', '0932222333', 'HCMC', (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'));
 
 -- Fee rules
 INSERT INTO shipping_fee_rules (name, from_region, to_region, within_province, base_fee, base_weight_kg, max_weight_kg, extra_fee_per_kg, enabled) VALUES
@@ -391,3 +396,38 @@ INSERT INTO order_status_history(order_id, order_status_id, note, warehouse_id, 
 ((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0006'), (SELECT order_status_id FROM order_statuses WHERE code='arrived_at_origin_hub'), 'At origin hub', (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'), NOW() - INTERVAL 6 DAY),
 ((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0006'), (SELECT order_status_id FROM order_statuses WHERE code='in_transit_to_sorting_center'), 'To HCM center', (SELECT warehouse_id FROM warehouses WHERE code='WH_HCM_CENTER'), NOW() - INTERVAL 5 DAY),
 ((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0006'), (SELECT order_status_id FROM order_statuses WHERE code='lost'), 'Lost in transit', (SELECT warehouse_id FROM warehouses WHERE code='WH_HCM_CENTER'), NOW() - INTERVAL 4 DAY);
+
+-- More orders specifically at WH_Q3 (for assignment demo)
+INSERT INTO orders (
+  tracking_code, customer_user_id, shipper_user_id, origin_warehouse_id, destination_warehouse_id, current_warehouse_id,
+  sender_name, sender_phone, sender_address, sender_lat, sender_lng,
+  receiver_name, receiver_phone, receiver_address, receiver_lat, receiver_lng,
+  weight_kg, shipping_fee, total_amount, current_status_id
+) VALUES (
+  'VN20251024-0013',
+  (SELECT user_id FROM users WHERE email='customer2@example.com'),
+  NULL,
+  (SELECT warehouse_id FROM warehouses WHERE code='WH_TB'),
+  (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'),
+  (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'),
+  'Cty ABC', '0902000000', 'Tan Binh, HCMC', 10.8010, 106.6520,
+  'Nguoi nhan Q3', '0902000001', 'Quan 3, HCMC', 10.7840, 106.6950,
+  1.20, 25000.00, 25000.00, (SELECT order_status_id FROM order_statuses WHERE code='arrived_at_destination_hub')
+), (
+  'VN20251024-0014',
+  (SELECT user_id FROM users WHERE email='customer@example.com'),
+  NULL,
+  (SELECT warehouse_id FROM warehouses WHERE code='WH_HCM_CENTER'),
+  (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'),
+  (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'),
+  'Shop XYZ', '0902111222', 'District 1, HCMC', 10.7769, 106.7009,
+  'Nguoi nhan Q3-2', '0902111223', 'Quan 3, HCMC', 10.7815, 106.6840,
+  0.80, 25000.00, 25000.00, (SELECT order_status_id FROM order_statuses WHERE code='arrived_at_destination_hub')
+);
+
+INSERT INTO order_status_history(order_id, order_status_id, note, warehouse_id, created_at) VALUES
+((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0013'), (SELECT order_status_id FROM order_statuses WHERE code='created'), 'Order created', (SELECT warehouse_id FROM warehouses WHERE code='WH_TB'), NOW() - INTERVAL 10 HOUR),
+((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0013'), (SELECT order_status_id FROM order_statuses WHERE code='in_transit_to_destination_hub'), 'To WH_Q3', (SELECT warehouse_id FROM warehouses WHERE code='WH_HCM_CENTER'), NOW() - INTERVAL 7 HOUR),
+((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0013'), (SELECT order_status_id FROM order_statuses WHERE code='arrived_at_destination_hub'), 'Arrived WH_Q3', (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'), NOW() - INTERVAL 3 HOUR),
+((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0014'), (SELECT order_status_id FROM order_statuses WHERE code='created'), 'Order created', (SELECT warehouse_id FROM warehouses WHERE code='WH_HCM_CENTER'), NOW() - INTERVAL 12 HOUR),
+((SELECT order_id FROM orders WHERE tracking_code='VN20251024-0014'), (SELECT order_status_id FROM order_statuses WHERE code='arrived_at_destination_hub'), 'Arrived WH_Q3', (SELECT warehouse_id FROM warehouses WHERE code='WH_Q3'), NOW() - INTERVAL 5 HOUR);
