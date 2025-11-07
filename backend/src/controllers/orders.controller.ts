@@ -107,3 +107,18 @@ export async function assignShipperHandler(req: Request, res: Response) {
   const order = await getOrderById(orderId)
   res.json(order)
 }
+
+export async function listByCustomerMeHandler(req: Request, res: Response) {
+  const customerId = req.user!.id
+  const [rows] = await pool.query(
+    `SELECT o.order_id, o.tracking_code, s.code AS current_status,
+            o.sender_name, o.created_at, o.shipping_fee, o.total_amount
+     FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE o.customer_user_id = ?
+     ORDER BY o.created_at DESC
+     LIMIT 500`,
+    [customerId]
+  )
+  res.json(rows)
+}

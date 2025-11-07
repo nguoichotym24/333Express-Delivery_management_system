@@ -3,11 +3,13 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const token = cookies().get("auth_token")?.value
+    const cookieStore = await cookies()
+    const token = cookieStore.get("auth_token")?.value
+    const { id } = await params
     const body = await req.json()
-    const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(params.id)}/status`, {
+    const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}/status`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -21,4 +23,3 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-

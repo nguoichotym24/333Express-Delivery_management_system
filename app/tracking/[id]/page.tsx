@@ -93,9 +93,20 @@ export default function TrackingPage() {
 
   const timeline = useMemo(() => {
     if (!order) return [] as Array<{ label: string; time: Date; status: string }>
+    const noWarehouseStatuses = new Set([
+      'created',
+      'out_for_delivery',
+      'delivered',
+      'delivery_failed',
+      'return_in_transit',
+      'cancelled',
+      'lost',
+    ])
     return order.history.map((h: OrderHistoryItem) => {
       const base = STATUS_LABELS[h.status] || h.status
-      const label = h.status === 'created' ? base : (h.warehouse_name ? `${base} — ${h.warehouse_name}` : base)
+      const label = noWarehouseStatuses.has(h.status)
+        ? base
+        : (h.warehouse_name ? `${base} — ${h.warehouse_name}` : base)
       return { status: h.status, label, time: new Date(h.created_at) }
     })
   }, [order])
@@ -210,7 +221,18 @@ export default function TrackingPage() {
                 {(() => {
                   const base = STATUS_LABELS[order.current_status] || order.current_status
                   const last = order.history?.length ? (order.history[order.history.length - 1] as OrderHistoryItem) : null
-                  const text = order.current_status === 'created' ? base : (last?.warehouse_name ? `${base} — ${last.warehouse_name}` : base)
+                  const noWarehouseStatuses = new Set([
+                    'created',
+                    'out_for_delivery',
+                    'delivered',
+                    'delivery_failed',
+                    'return_in_transit',
+                    'cancelled',
+                    'lost',
+                  ])
+                  const text = noWarehouseStatuses.has(order.current_status)
+                    ? base
+                    : (last?.warehouse_name ? `${base} — ${last.warehouse_name}` : base)
                   return <p className="text-primary font-semibold text-center">{text}</p>
                 })()}
               </div>
