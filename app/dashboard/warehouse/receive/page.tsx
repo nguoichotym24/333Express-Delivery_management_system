@@ -5,6 +5,7 @@ import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "@/hooks/use-toast"
+import { statusLabel } from "@/lib/status"
 
 type PublicOrder = { order_id: number; tracking_code: string; current_status: string; created_at: string }
 
@@ -76,7 +77,7 @@ export default function ReceivePage() {
     setError("")
     setInfo("")
     if (!warehouseId) {
-      const msg = "Tài khoản kho chưa gán warehouse_id"
+      const msg = "Tài khoản kho chưa gắn warehouse_id"
       toast({ title: "Thiếu thông tin", description: msg })
       setError(msg)
       return
@@ -115,13 +116,13 @@ export default function ReceivePage() {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Check‑in theo mã</h1>
+          <h1 className="text-3xl font-bold mb-2">Check-in theo mã</h1>
           <p className="text-secondary">Quét hoặc nhập mã vận đơn để nhận hàng vào kho gửi</p>
         </div>
 
         {!warehouseId && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-sm text-yellow-700">
-            Tài khoản kho của bạn chưa gán kho (warehouse_id). Vui lòng liên hệ admin.
+            Tài khoản kho của bạn chưa gắn kho (warehouse_id). Vui lòng liên hệ admin.
           </div>
         )}
 
@@ -168,7 +169,7 @@ export default function ReceivePage() {
                     <div key={o.order_id} className="p-6 hover:bg-background transition-colors flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-primary">{o.tracking_code}</p>
-                        <p className="text-secondary text-sm">Trạng thái hiện tại: {o.current_status}</p>
+                        <p className="text-secondary text-sm">Trạng thái hiện tại: {statusLabel(o.current_status)}</p>
                       </div>
                       <button onClick={() => setScanned((prev) => prev.filter((x) => x.order_id !== o.order_id))} className="text-red-400 hover:text-red-300 text-sm">Xóa</button>
                     </div>
@@ -197,3 +198,4 @@ export default function ReceivePage() {
     </DashboardLayout>
   )
 }
+

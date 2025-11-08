@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { statusLabel } from "@/lib/status"
 
 type OrderRow = {
   order_id: number
@@ -23,16 +24,11 @@ export default function StatusPage() {
   useEffect(() => {
     fetch('/api/orders/shipper')
       .then(r => r.json())
-      .then((data) => setOrders(data))
+      .then((data) => setOrders(Array.isArray(data) ? data : []))
       .catch(() => setOrders([]))
   }, [])
 
-  const statuses = [
-    { value: 'picked_up', label: 'Đã lấy hàng' },
-    { value: 'out_for_delivery', label: 'Đang giao hàng' },
-    { value: 'delivered', label: 'Giao hàng thành công' },
-    { value: 'delivery_failed', label: 'Giao hàng thất bại' },
-  ]
+  const statuses = ['picked_up','out_for_delivery','delivered','delivery_failed'] as const
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +46,7 @@ export default function StatusPage() {
       if (!res.ok) throw new Error(data?.error || 'Cập nhật thất bại')
       setSuccess('Cập nhật trạng thái thành công')
       const list = await fetch('/api/orders/shipper').then(r => r.json())
-      setOrders(list)
+      setOrders(Array.isArray(list) ? list : [])
       setNotes("")
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra')
@@ -80,7 +76,7 @@ export default function StatusPage() {
                     className={`w-full text-left p-4 rounded-lg border transition-colors ${selectedOrder === order.order_id ? 'bg-primary/10 border-primary' : 'bg-background border-default hover:border-primary'}`}
                   >
                     <p className="font-medium text-primary">{order.tracking_code}</p>
-                    <p className="text-secondary text-sm">Trạng thái: {order.current_status}</p>
+                    <p className="text-secondary text-sm">Trạng thái: {statusLabel(order.current_status)}</p>
                   </button>
                 ))}
               </div>
@@ -91,12 +87,12 @@ export default function StatusPage() {
               <div className="space-y-3">
                 {statuses.map((s) => (
                   <button
-                    key={s.value}
+                    key={s}
                     type="button"
-                    onClick={() => setStatus(s.value)}
-                    className={`w-full text-left p-4 rounded-lg border transition-colors ${status === s.value ? 'bg-primary/10 border-primary' : 'bg-background border-default hover:border-primary'}`}
+                    onClick={() => setStatus(s)}
+                    className={`w-full text-left p-4 rounded-lg border transition-colors ${status === s ? 'bg-primary/10 border-primary' : 'bg-background border-default hover:border-primary'}`}
                   >
-                    <p className="font-medium">{s.label}</p>
+                    <p className="font-medium">{statusLabel(s)}</p>
                   </button>
                 ))}
               </div>
@@ -123,7 +119,7 @@ export default function StatusPage() {
               </div>
               <div>
                 <p className="text-secondary text-sm mb-1">Trạng thái</p>
-                <p className="font-medium">{statuses.find((s) => s.value === status)?.label || 'Chưa chọn'}</p>
+                <p className="font-medium">{status ? statusLabel(status) : 'Chưa chọn'}</p>
               </div>
             </div>
 
@@ -139,3 +135,4 @@ export default function StatusPage() {
     </DashboardLayout>
   )
 }
+

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useRef, useState } from "react"
 
@@ -74,7 +74,7 @@ export default function RouteMapClient({ height = 360, sender, receiver, current
 
     // Markers
     const senderMarker = L.marker([sender.lat, sender.lng]).addTo(map).bindPopup('Người gửi')
-    const receiverMarker = L.marker([receiver.lat, receiver.lng]).addTo(map).bindPopup('Người nhận')
+    const receiverMarker = L.marker([receiver.lat, receiver.lng]).addTo(map).bindPopup('Người gửi')
     let currentMarker: any = null
     if (currentWarehouse) {
       currentMarker = L.marker([currentWarehouse.lat, currentWarehouse.lng])

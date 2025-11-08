@@ -2,8 +2,11 @@
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { statusLabel } from "@/lib/status"
+
+const RouteMap = dynamic(() => import("@/components/map/route-map-client"), { ssr: false })
 
 type OrderHistoryItem = {
   order_status_history_id: number
@@ -32,10 +35,12 @@ export default function TrackingPage() {
   const [order, setOrder] = useState<OrderResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [route, setRoute] = useState<any | null>(null)
 
   const handleSearch = async () => {
     setError("")
     setOrder(null)
+    setRoute(null)
     const code = trackingNumber.trim()
     if (!code) return
     setLoading(true)
@@ -44,6 +49,11 @@ export default function TrackingPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || "Không tìm thấy đơn hàng")
       setOrder(data)
+      try {
+        const r2 = await fetch(`/api/orders/${encodeURIComponent(code)}/route`)
+        const d2 = await r2.json()
+        if (r2.ok) setRoute(d2)
+      } catch {}
     } catch (e: any) {
       setError(e?.message || "Có lỗi xảy ra")
     } finally {
@@ -153,6 +163,23 @@ export default function TrackingPage() {
                   <p className="text-secondary text-sm">Chưa có lịch sử trạng thái.</p>
                 )}
               </div>
+            </div>
+
+            <div className="bg-surface border border-default rounded-xl p-8">
+              <h3 className="font-semibold mb-6">Bản đồ tuyến đường</h3>
+              {route ? (
+                <RouteMap
+                  height={360}
+                  sender={route.sender}
+                  receiver={route.receiver}
+                  currentWarehouse={route.currentWarehouse || undefined}
+                  route={route.route}
+                  followRoads
+                  lastUpdate={(route as any).lastUpdate || route.currentWarehouse || undefined}
+                />
+              ) : (
+                <p className="text-secondary text-sm">Chưa có dữ liệu bản đồ.</p>
+              )}
             </div>
           </div>
         ) : !loading && trackingNumber ? (
