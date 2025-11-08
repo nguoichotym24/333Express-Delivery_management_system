@@ -3,11 +3,11 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const token = cookieStore.get("auth_token")?.value
-    const { id } = await params
+    const { id } = params
     const body = await req.json()
     const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}/status`, {
       method: "PATCH",

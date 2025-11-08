@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
+import { statusLabel, STATUS_LABELS } from "@/lib/status"
 
 const RouteMap = dynamic(() => import("@/components/map/route-map-client"), { ssr: false })
 
@@ -17,25 +18,6 @@ type OrderRow = {
   receiver_lat: number
   receiver_lng: number
   created_at: string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  created: "Người gửi đã tạo đơn",
-  waiting_for_pickup: "Chờ lấy hàng",
-  picked_up: "Đã lấy hàng",
-  arrived_at_origin_hub: "Đã đến kho gửi",
-  in_transit_to_sorting_center: "Đang đến kho trung tâm",
-  arrived_at_sorting_hub: "Đã đến kho trung tâm",
-  in_transit_to_destination_hub: "Đang đến kho đích",
-  arrived_at_destination_hub: "Đã đến kho đích",
-  out_for_delivery: "Đang giao hàng",
-  delivered: "Giao hàng thành công",
-  delivery_failed: "Giao hàng thất bại",
-  returned_to_destination_hub: "Trả về kho đích",
-  return_in_transit: "Đang hoàn hàng",
-  returned_to_origin: "Đã hoàn về kho gốc",
-  cancelled: "Đã hủy",
-  lost: "Thất lạc",
 }
 
 export default function TrackingPage() {
@@ -119,7 +101,7 @@ export default function TrackingPage() {
             <option value="">Tất cả</option>
             {Object.keys(STATUS_LABELS).map((k) => (
               <option key={k} value={k}>
-                {STATUS_LABELS[k]}
+                {statusLabel(k)}
               </option>
             ))}
           </select>
@@ -144,20 +126,30 @@ export default function TrackingPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td className="px-6 py-6" colSpan={3}><div className="space-y-3"><div className="bg-accent animate-pulse h-5 w-1/2 rounded" /><div className="bg-accent animate-pulse h-5 w-2/3 rounded" /><div className="bg-accent animate-pulse h-5 w-1/3 rounded" /></div></td></tr>
-                ) : filteredRows.map((order) => (
-                  <tr
-                    key={order.order_id}
-                    className="border-b border-default hover:bg-background transition-colors cursor-pointer"
-                    onClick={() => setSelected(order)}
-                  >
-                    <td className="px-6 py-4 text-sm font-medium text-primary">{order.tracking_code}</td>
-                    <td className="px-6 py-4 text-sm">{STATUS_LABELS[order.current_status] || order.current_status}</td>
-                    <td className="px-6 py-4 text-sm text-secondary">
-                      {new Date(order.created_at).toLocaleDateString("vi-VN")}
+                  <tr>
+                    <td className="px-6 py-6" colSpan={3}>
+                      <div className="space-y-3">
+                        <div className="bg-accent animate-pulse h-5 w-1/2 rounded" />
+                        <div className="bg-accent animate-pulse h-5 w-2/3 rounded" />
+                        <div className="bg-accent animate-pulse h-5 w-1/3 rounded" />
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredRows.map((order) => (
+                    <tr
+                      key={order.order_id}
+                      className="border-b border-default hover:bg-background transition-colors cursor-pointer"
+                      onClick={() => setSelected(order)}
+                    >
+                      <td className="px-6 py-4 text-sm font-medium text-primary">{order.tracking_code}</td>
+                      <td className="px-6 py-4 text-sm">{statusLabel(order.current_status)}</td>
+                      <td className="px-6 py-4 text-sm text-secondary">
+                        {new Date(order.created_at).toLocaleDateString("vi-VN")}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -183,3 +175,4 @@ export default function TrackingPage() {
     </DashboardLayout>
   )
 }
+

@@ -9,13 +9,11 @@ export default function CustomerDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">Customer Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">Bảng điều khiển Khách hàng</h1>
           <p className="text-secondary">Theo dõi và quản lý đơn hàng của bạn</p>
         </div>
 
-        {/* Quick Stats */}
         <div className="grid md:grid-cols-4 gap-4">
           {[
             { label: "Đơn hàng hoàn thành", value: "12", color: "bg-green-500/10 text-green-400" },
@@ -30,7 +28,6 @@ export default function CustomerDashboard() {
           ))}
         </div>
 
-        {/* Navigation Cards */}
         <div className="grid md:grid-cols-3 gap-6">
           <Link href="/dashboard/customer/create-order">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">

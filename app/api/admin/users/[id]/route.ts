@@ -3,10 +3,10 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
-export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await context.params
-    const cookieStore = await cookies()
+    const { id } = params
+    const cookieStore = cookies()
     const token = cookieStore.get("auth_token")?.value
     if (id === 'count') {
       const res = await fetch(`${API_BASE}/admin/users/count`, {
@@ -27,12 +27,12 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
   }
 }
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json()
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const token = cookieStore.get("auth_token")?.value
-    const { id } = await context.params
+    const { id } = params
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: {
@@ -48,11 +48,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const token = cookieStore.get("auth_token")?.value
-    const { id } = await context.params
+    const { id } = params
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,

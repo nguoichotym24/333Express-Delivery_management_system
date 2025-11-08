@@ -3,11 +3,11 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
-export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const token = (await cookies()).get("auth_token")?.value
+    const token = cookies().get("auth_token")?.value
     const body = await req.json()
-    const { id } = await context.params
+    const { id } = params
     const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}/assign`, {
       method: "POST",
       headers: {

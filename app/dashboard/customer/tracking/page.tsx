@@ -10,42 +10,34 @@ export default function TrackingPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
 
   const handleSearch = () => {
-    const order = orders.orders.find((o: any) => o.trackingNumber === trackingNumber)
+    const order = (orders as any).orders.find((o: any) => o.trackingNumber === trackingNumber)
     setSelectedOrder(order || null)
   }
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      order_created: "bg-blue-500/10 text-blue-400",
-      picked_up: "bg-purple-500/10 text-purple-400",
-      at_warehouse: "bg-yellow-500/10 text-yellow-400",
-      in_transit: "bg-cyan-500/10 text-cyan-400",
-      delivered: "bg-green-500/10 text-green-400",
-    }
-    return colors[status] || "bg-gray-500/10 text-gray-400"
-  }
+  const getStatusColor = (status: string) => ({
+    order_created: "bg-blue-500/10 text-blue-400",
+    picked_up: "bg-purple-500/10 text-purple-400",
+    at_warehouse: "bg-yellow-500/10 text-yellow-400",
+    in_transit: "bg-cyan-500/10 text-cyan-400",
+    delivered: "bg-green-500/10 text-green-400",
+  }[status] || "bg-gray-500/10 text-gray-400")
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      order_created: "Đơn hàng được tạo",
-      picked_up: "Hàng được lấy",
-      at_warehouse: "Tại kho",
-      in_transit: "Đang giao",
-      delivered: "Đã giao",
-    }
-    return labels[status] || status
-  }
+  const getStatusLabel = (status: string) => ({
+    order_created: "Đơn hàng đã tạo",
+    picked_up: "Hàng đã lấy",
+    at_warehouse: "Tới kho",
+    in_transit: "Đang giao",
+    delivered: "Đã giao",
+  }[status] || status)
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold mb-2">Theo dõi đơn hàng</h1>
           <p className="text-secondary">Nhập mã vận đơn để theo dõi đơn hàng của bạn</p>
         </div>
 
-        {/* Search Section */}
         <div className="bg-surface border border-default rounded-xl p-8">
           <div className="flex gap-4">
             <input
@@ -55,16 +47,12 @@ export default function TrackingPage() {
               placeholder="Nhập mã vận đơn (VD: DH001234567890)"
               className="flex-1 bg-background border border-default rounded-lg px-4 py-3 text-foreground placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <Button onClick={handleSearch} className="bg-primary text-background hover:bg-[#00A8CC] px-8">
-              Tìm kiếm
-            </Button>
+            <Button onClick={handleSearch} className="bg-primary text-background hover:bg-[#00A8CC] px-8">Tìm kiếm</Button>
           </div>
         </div>
 
-        {/* Order Details */}
         {selectedOrder ? (
           <div className="space-y-6">
-            {/* Order Header */}
             <div className="bg-surface border border-default rounded-xl p-8">
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div>
@@ -73,15 +61,12 @@ export default function TrackingPage() {
                 </div>
                 <div>
                   <p className="text-secondary text-sm mb-2">Trạng thái</p>
-                  <div
-                    className={`inline-block px-4 py-2 rounded-lg font-medium ${getStatusColor(selectedOrder.status)}`}
-                  >
+                  <div className={`inline-block px-4 py-2 rounded-lg font-medium ${getStatusColor(selectedOrder.status)}`}>
                     {getStatusLabel(selectedOrder.status)}
                   </div>
                 </div>
               </div>
 
-              {/* Sender & Receiver */}
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <h3 className="font-semibold mb-4">Người gửi</h3>
@@ -102,7 +87,6 @@ export default function TrackingPage() {
               </div>
             </div>
 
-            {/* Timeline */}
             <div className="bg-surface border border-default rounded-xl p-8">
               <h3 className="font-semibold mb-6">Lịch sử cập nhật</h3>
               <div className="space-y-4">
@@ -121,45 +105,35 @@ export default function TrackingPage() {
               </div>
             </div>
 
-            {/* Items */}
             <div className="bg-surface border border-default rounded-xl p-8">
               <h3 className="font-semibold mb-6">Sản phẩm</h3>
               <div className="space-y-4">
                 {selectedOrder.items.map((item: any, index: number) => (
                   <div key={index} className="flex gap-4 pb-4 border-b border-default last:border-0">
-                    <img
-                      src={item.image || "/placeholder.svg"}
-                      alt={item.name}
-                      className="w-20 h-20 rounded-lg bg-background object-cover"
-                    />
+                    <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-20 h-20 rounded-lg bg-background object-cover" />
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
                       <p className="text-secondary text-sm">Số lượng: {item.quantity}</p>
-                      <p className="text-primary font-semibold">
-                        {(item.price * item.quantity).toLocaleString("vi-VN")} đ
-                      </p>
+                      <p className="text-primary font-semibold">{(item.price * item.quantity).toLocaleString("vi-VN")} ₫</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="bg-surface border border-default rounded-xl p-8">
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-secondary">Tổng tiền hàng</span>
-                  <span className="font-medium">{selectedOrder.totalAmount.toLocaleString("vi-VN")} đ</span>
+                  <span className="font-medium">{selectedOrder.totalAmount.toLocaleString("vi-VN")} ₫</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-secondary">Phí vận chuyển</span>
-                  <span className="font-medium">{selectedOrder.shippingFee.toLocaleString("vi-VN")} đ</span>
+                  <span className="font-medium">{selectedOrder.shippingFee.toLocaleString("vi-VN")} ₫</span>
                 </div>
                 <div className="border-t border-default pt-3 flex justify-between">
                   <span className="font-semibold">Tổng cộng</span>
-                  <span className="text-primary font-bold text-lg">
-                    {(selectedOrder.totalAmount + selectedOrder.shippingFee).toLocaleString("vi-VN")} đ
-                  </span>
+                  <span className="text-primary font-bold text-lg">{(selectedOrder.totalAmount + selectedOrder.shippingFee).toLocaleString("vi-VN")} ₫</span>
                 </div>
               </div>
             </div>

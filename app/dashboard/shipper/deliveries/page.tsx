@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
+import { statusLabel } from "@/lib/status"
 
 const RouteMap = dynamic(() => import("@/components/map/route-map-client"), { ssr: false })
 
@@ -17,52 +18,41 @@ type OrderRow = {
   created_at: string
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  created: 'Người gửi đã tạo đơn',
-  waiting_for_pickup: 'Chờ lấy hàng',
-  picked_up: 'Đã lấy hàng',
-  arrived_at_origin_hub: 'Đã đến kho gửi',
-  in_transit_to_sorting_center: 'Đang đến kho trung tâm',
-  arrived_at_sorting_hub: 'Đã đến kho trung tâm',
-  in_transit_to_destination_hub: 'Đang đến kho đích',
-  arrived_at_destination_hub: 'Đã đến kho đích',
-  out_for_delivery: 'Đang giao hàng',
-  delivered: 'Giao hàng thành công',
-  delivery_failed: 'Giao hàng thất bại',
-  returned_to_destination_hub: 'Trả về kho đích',
-  return_in_transit: 'Đang hoàn hàng',
-  returned_to_origin: 'Đã hoàn về kho gửi',
-  cancelled: 'Đã hủy',
-  lost: 'Thất lạc',
-}
-
 export default function DeliveriesPage() {
   const [rows, setRows] = useState<OrderRow[]>([])
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useState<string>("all")
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [route, setRoute] = useState<any | null>(null)
 
   useEffect(() => {
-    fetch('/api/orders/shipper')
-      .then(r => r.json())
+    fetch("/api/orders/shipper")
+      .then((r) => r.json())
       .then((data) => setRows(data))
       .catch(() => setRows([]))
   }, [])
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return rows
-    return rows.filter(r => r.current_status === filter)
+    if (filter === "all") return rows
+    return rows.filter((r) => r.current_status === filter)
   }, [rows, filter])
 
   useEffect(() => {
     if (!selected) return
     fetch(`/api/orders/${encodeURIComponent(selected.tracking_code)}/route`)
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(setRoute)
       .catch(() => setRoute(null))
   }, [selected])
 
-  const statuses = ['all', 'waiting_for_pickup', 'picked_up', 'in_transit_to_destination_hub', 'out_for_delivery', 'delivered', 'delivery_failed']
+  const statuses = [
+    "all",
+    "waiting_for_pickup",
+    "picked_up",
+    "in_transit_to_destination_hub",
+    "out_for_delivery",
+    "delivered",
+    "delivery_failed",
+  ]
 
   return (
     <DashboardLayout>
@@ -78,9 +68,13 @@ export default function DeliveriesPage() {
               <button
                 key={s}
                 onClick={() => setFilter(s)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === s ? 'bg-primary text-background' : 'bg-background border border-default text-foreground hover:border-primary'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === s
+                    ? "bg-primary text-background"
+                    : "bg-background border border-default text-foreground hover:border-primary"
+                }`}
               >
-                {s === 'all' ? 'Tất cả' : s}
+                {s === "all" ? "Tất cả" : statusLabel(s)}
               </button>
             ))}
           </div>
@@ -98,10 +92,14 @@ export default function DeliveriesPage() {
               </thead>
               <tbody>
                 {filtered.map((order) => (
-                  <tr key={order.order_id} className="border-b border-default hover:bg-background transition-colors cursor-pointer" onClick={() => setSelected(order)}>
+                  <tr
+                    key={order.order_id}
+                    className="border-b border-default hover:bg-background transition-colors cursor-pointer"
+                    onClick={() => setSelected(order)}
+                  >
                     <td className="px-6 py-4 text-sm font-medium text-primary">{order.tracking_code}</td>
-                    <td className="px-6 py-4 text-sm">{STATUS_LABELS[order.current_status] || order.current_status}</td>
-                    <td className="px-6 py-4 text-sm text-secondary">{new Date(order.created_at).toLocaleDateString('vi-VN')}</td>
+                    <td className="px-6 py-4 text-sm">{statusLabel(order.current_status)}</td>
+                    <td className="px-6 py-4 text-sm text-secondary">{new Date(order.created_at).toLocaleDateString("vi-VN")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -129,3 +127,4 @@ export default function DeliveriesPage() {
     </DashboardLayout>
   )
 }
+

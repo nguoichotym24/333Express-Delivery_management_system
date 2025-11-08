@@ -3,11 +3,11 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await context.params
+    const { id } = params
     const body = await req.json()
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const token = cookieStore.get("auth_token")?.value
     const res = await fetch(`${API_BASE}/admin/warehouses/${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -21,10 +21,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await context.params
-    const cookieStore = await cookies()
+    const { id } = params
+    const cookieStore = cookies()
     const token = cookieStore.get("auth_token")?.value
     const res = await fetch(`${API_BASE}/admin/warehouses/${encodeURIComponent(id)}`, {
       method: 'DELETE',
@@ -37,4 +37,3 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-

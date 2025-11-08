@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">Bảng điều khiển Admin</h1>
           <p className="text-secondary">Quản lý toàn bộ hệ thống</p>
         </div>
 
