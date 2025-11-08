@@ -11,12 +11,6 @@ const menuItems = {
     { label: "Theo dõi đơn hàng", href: "/dashboard/customer/tracking" },
     { label: "Lịch sử mua hàng", href: "/dashboard/customer/history" },
   ],
-  seller: [
-    { label: "Dashboard", href: "/dashboard/seller" },
-    { label: "Tạo đơn hàng", href: "/dashboard/seller/create-order" },
-    { label: "Danh sách đơn hàng", href: "/dashboard/seller/orders" },
-    { label: "Thống kê doanh thu", href: "/dashboard/seller/analytics" },
-  ],
   warehouse: [
     { label: "Dashboard", href: "/dashboard/warehouse" },
     { label: "Nhận hàng", href: "/dashboard/warehouse/receive" },

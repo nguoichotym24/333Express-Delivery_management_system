@@ -17,3 +17,19 @@ export async function GET(_req: NextRequest) {
   }
 }
 
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const cookieStore = await cookies()
+    const token = cookieStore.get("auth_token")?.value
+    const res = await fetch(`${API_BASE}/admin/fee-rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body)
+    })
+    const data = await res.json()
+    return NextResponse.json(data, { status: res.status })
+  } catch (e) {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
