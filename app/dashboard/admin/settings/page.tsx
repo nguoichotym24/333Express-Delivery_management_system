@@ -53,7 +53,7 @@ export default function SettingsPage() {
   const [loadingWarehouses, setLoadingWarehouses] = useState(true)
 
   // CRUD states for fee rules
-  const [creating, setCreating] = useState(false)
+  const [creatingRule, setCreatingRule] = useState(false)
   const [newRule, setNewRule] = useState({
     name: "",
     within_province: true,
@@ -65,8 +65,14 @@ export default function SettingsPage() {
     extra_fee_per_kg: 0,
     enabled: true,
   })
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editData, setEditData] = useState<Partial<FeeRule>>({})
+  const [editingRuleId, setEditingRuleId] = useState<number | null>(null)
+  const [editRule, setEditRule] = useState<Partial<FeeRule>>({})
+
+  // CRUD states for warehouses
+  const [creatingWh, setCreatingWh] = useState(false)
+  const [newWh, setNewWh] = useState({ code: '', name: '', province: '', region: 'north', address: '', lat: '', lng: '', capacity: 0, is_sorting_hub: false })
+  const [editingWhId, setEditingWhId] = useState<number | null>(null)
+  const [editWh, setEditWh] = useState<Partial<Warehouse>>({})
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -103,13 +109,17 @@ export default function SettingsPage() {
       .finally(() => setLoadingFeeRules(false))
   }
 
-  useEffect(() => {
-    reloadFeeRules()
+  const reloadWarehouses = () => {
     setLoadingWarehouses(true)
     fetch('/api/warehouses')
       .then(r => r.json())
       .then((data) => setWarehouses(Array.isArray(data) ? data : []))
       .finally(() => setLoadingWarehouses(false))
+  }
+
+  useEffect(() => {
+    reloadFeeRules()
+    reloadWarehouses()
   }, [])
 
   const exampleSameProvinceUnderBase = shippingConfig.domesticSameProvince
@@ -192,7 +202,7 @@ export default function SettingsPage() {
           <h2 className="text-2xl font-bold mb-2">Bảng phí từ cơ sở dữ liệu</h2>
           <p className="text-secondary text-sm mb-6">Thêm/sửa/xóa luật tính phí</p>
 
-          {/* Create form */}
+          {/* Create rule */}
           <div className="mb-6 grid md:grid-cols-3 gap-4">
             <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Tên luật" value={newRule.name} onChange={(e) => setNewRule({ ...newRule, name: e.target.value })} />
             <select className="bg-background border border-default rounded-lg px-3 py-2" value={newRule.within_province ? '1' : '0'} onChange={(e) => setNewRule({ ...newRule, within_province: e.target.value === '1' })}>
@@ -218,15 +228,15 @@ export default function SettingsPage() {
               <option value="0">Tắt</option>
             </select>
             <div className="flex items-center">
-              <Button disabled={creating || !newRule.name} onClick={async () => {
-                setCreating(true)
+              <Button disabled={creatingRule || !newRule.name} onClick={async () => {
+                setCreatingRule(true)
                 try {
                   const payload: any = { name: newRule.name, within_province: newRule.within_province ? 1 : 0, base_fee: newRule.base_fee, base_weight_kg: newRule.base_weight_kg, max_weight_kg: newRule.max_weight_kg, extra_fee_per_kg: newRule.extra_fee_per_kg, enabled: newRule.enabled ? 1 : 0 }
                   if (!newRule.within_province) { payload.from_region = newRule.from_region; payload.to_region = newRule.to_region }
                   const res = await fetch('/api/admin/fee-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
                   if (!res.ok) { const err = await res.json().catch(()=>({})); alert(err?.error || 'Không thể tạo luật') } else { setNewRule({ name: '', within_province: true, from_region: 'north', to_region: 'north', base_fee: 25000, base_weight_kg: 1, max_weight_kg: 50, extra_fee_per_kg: 0, enabled: true }); reloadFeeRules() }
-                } finally { setCreating(false) }
-              }} className="bg-primary text-background hover:bg-[#00A8CC]">{creating ? 'Đang thêm...' : 'Thêm luật'}</Button>
+                } finally { setCreatingRule(false) }
+              }} className="bg-primary text-background hover:bg-[#00A8CC]">{creatingRule ? 'Đang thêm...' : 'Thêm luật'}</Button>
             </div>
           </div>
 
@@ -252,20 +262,20 @@ export default function SettingsPage() {
                 ) : (
                   feeRules.map((r) => (
                     <tr key={r.id} className="border-b border-default">
-                      <td className="px-4 py-3">{editingId === r.id ? (<input defaultValue={r.name} onChange={(e)=>setEditData({ ...editData, name: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1" />) : r.name}</td>
+                      <td className="px-4 py-3">{editingRuleId === r.id ? (<input defaultValue={r.name} onChange={(e)=>setEditRule({ ...editRule, name: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1" />) : r.name}</td>
                       <td className="px-4 py-3">
-                        {editingId === r.id ? (
+                        {editingRuleId === r.id ? (
                           <div className="flex gap-2 items-center">
-                            <select defaultValue={r.within_province ? '1' : '0'} onChange={(e)=>setEditData({ ...editData, within_province: (e.target.value==='1') as any })} className="bg-background border border-default rounded px-2 py-1">
+                            <select defaultValue={r.within_province ? '1' : '0'} onChange={(e)=>setEditRule({ ...editRule, within_province: (e.target.value==='1') as any })} className="bg-background border border-default rounded px-2 py-1">
                               <option value="1">Nội tỉnh</option>
                               <option value="0">Theo miền</option>
                             </select>
-                            {!((editData.within_province ?? r.within_province) as any) && (
+                            {!((editRule.within_province ?? r.within_province) as any) && (
                               <>
-                                <select defaultValue={r.from_region || 'north'} onChange={(e)=>setEditData({ ...editData, from_region: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1">
+                                <select defaultValue={r.from_region || 'north'} onChange={(e)=>setEditRule({ ...editRule, from_region: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1">
                                   {regionOptions.map(x => <option key={x} value={x}>{x}</option>)}
                                 </select>
-                                <select defaultValue={r.to_region || 'north'} onChange={(e)=>setEditData({ ...editData, to_region: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1">
+                                <select defaultValue={r.to_region || 'north'} onChange={(e)=>setEditRule({ ...editRule, to_region: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1">
                                   {regionOptions.map(x => <option key={x} value={x}>{x}</option>)}
                                 </select>
                               </>
@@ -275,33 +285,33 @@ export default function SettingsPage() {
                           r.within_province ? 'Nội tỉnh' : `${r.from_region ?? '-'} → ${r.to_region ?? '-'}`
                         )}
                       </td>
-                      <td className="px-4 py-3">{editingId === r.id ? (<input type="number" defaultValue={r.base_fee as any} onChange={(e)=>setEditData({ ...editData, base_fee: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-28" />) : r.base_fee.toLocaleString('vi-VN')}</td>
-                      <td className="px-4 py-3">{editingId === r.id ? (<input type="number" defaultValue={r.base_weight_kg as any} onChange={(e)=>setEditData({ ...editData, base_weight_kg: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-20" />) : r.base_weight_kg}</td>
-                      <td className="px-4 py-3">{editingId === r.id ? (<input type="number" defaultValue={r.max_weight_kg as any} onChange={(e)=>setEditData({ ...editData, max_weight_kg: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-20" />) : r.max_weight_kg}</td>
-                      <td className="px-4 py-3">{editingId === r.id ? (<input type="number" defaultValue={r.extra_fee_per_kg as any} onChange={(e)=>setEditData({ ...editData, extra_fee_per_kg: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-28" />) : r.extra_fee_per_kg.toLocaleString('vi-VN')}</td>
+                      <td className="px-4 py-3">{editingRuleId === r.id ? (<input type="number" defaultValue={r.base_fee as any} onChange={(e)=>setEditRule({ ...editRule, base_fee: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-28" />) : r.base_fee.toLocaleString('vi-VN')}</td>
+                      <td className="px-4 py-3">{editingRuleId === r.id ? (<input type="number" defaultValue={r.base_weight_kg as any} onChange={(e)=>setEditRule({ ...editRule, base_weight_kg: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-20" />) : r.base_weight_kg}</td>
+                      <td className="px-4 py-3">{editingRuleId === r.id ? (<input type="number" defaultValue={r.max_weight_kg as any} onChange={(e)=>setEditRule({ ...editRule, max_weight_kg: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-20" />) : r.max_weight_kg}</td>
+                      <td className="px-4 py-3">{editingRuleId === r.id ? (<input type="number" defaultValue={r.extra_fee_per_kg as any} onChange={(e)=>setEditRule({ ...editRule, extra_fee_per_kg: Number(e.target.value) as any })} className="bg-background border border-default rounded px-2 py-1 w-28" />) : r.extra_fee_per_kg.toLocaleString('vi-VN')}</td>
                       <td className="px-4 py-3">
-                        {editingId === r.id ? (
-                          <select defaultValue={r.enabled ? '1' : '0'} onChange={(e)=>setEditData({ ...editData, enabled: (e.target.value==='1') as any })} className="bg-background border border-default rounded px-2 py-1">
+                        {editingRuleId === r.id ? (
+                          <select defaultValue={r.enabled ? '1' : '0'} onChange={(e)=>setEditRule({ ...editRule, enabled: (e.target.value==='1') as any })} className="bg-background border border-default rounded px-2 py-1">
                             <option value="1">Bật</option>
                             <option value="0">Tắt</option>
                           </select>
                         ) : (r.enabled ? 'Bật' : 'Tắt')}
                       </td>
                       <td className="px-4 py-3 text-right space-x-2">
-                        {editingId === r.id ? (
+                        {editingRuleId === r.id ? (
                           <>
                             <button className="px-3 py-1 rounded bg-primary text-background" onClick={async ()=>{
-                              const payload: any = { ...editData }
+                              const payload: any = { ...editRule }
                               if (payload.within_province !== undefined) payload.within_province = payload.within_province ? 1 : 0
                               if ((payload as any).enabled !== undefined) payload.enabled = (payload as any).enabled ? 1 : 0
                               const res = await fetch(`/api/admin/fee-rules/${r.id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) })
-                              if (!res.ok) { const err = await res.json().catch(()=>({})); alert(err?.error || 'Không thể cập nhật') } else { setEditingId(null); setEditData({}); reloadFeeRules() }
+                              if (!res.ok) { const err = await res.json().catch(()=>({})); alert(err?.error || 'Không thể cập nhật') } else { setEditingRuleId(null); setEditRule({}); reloadFeeRules() }
                             }}>Lưu</button>
-                            <button className="px-3 py-1 rounded bg-background border border-default" onClick={()=>{ setEditingId(null); setEditData({}) }}>Huỷ</button>
+                            <button className="px-3 py-1 rounded bg-background border border-default" onClick={()=>{ setEditingRuleId(null); setEditRule({}) }}>Huỷ</button>
                           </>
                         ) : (
                           <>
-                            <button className="px-3 py-1 rounded bg-background border border-default" onClick={()=>{ setEditingId(r.id); setEditData({}) }}>Sửa</button>
+                            <button className="px-3 py-1 rounded bg-background border border-default" onClick={()=>{ setEditingRuleId(r.id); setEditRule({}) }}>Sửa</button>
                             <button className="px-3 py-1 rounded bg-red-600 text-white" onClick={async ()=>{
                               if (!confirm('Xoá luật phí này?')) return
                               const res = await fetch(`/api/admin/fee-rules/${r.id}`, { method: 'DELETE' })
@@ -318,10 +328,42 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Danh sách kho (DB) - read-only */}
+        {/* Danh sách kho (DB) - CRUD */}
         <div className="bg-surface border border-default rounded-xl p-8">
           <h2 className="text-2xl font-bold mb-2">Danh sách kho</h2>
-          <p className="text-secondary text-sm mb-6">Toàn bộ kho trong hệ thống (chỉ đọc)</p>
+          <p className="text-secondary text-sm mb-6">Quản lý kho trong hệ thống</p>
+
+          {/* Create warehouse */}
+          <div className="mb-6 grid md:grid-cols-3 gap-4">
+            <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Mã kho" value={newWh.code} onChange={(e) => setNewWh({ ...newWh, code: e.target.value })} />
+            <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Tên kho" value={newWh.name} onChange={(e) => setNewWh({ ...newWh, name: e.target.value })} />
+            <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Tỉnh/Thành" value={newWh.province} onChange={(e) => setNewWh({ ...newWh, province: e.target.value })} />
+            <select className="bg-background border border-default rounded-lg px-3 py-2" value={newWh.region} onChange={(e) => setNewWh({ ...newWh, region: e.target.value })}>
+              {regionOptions.map(r => (<option key={r} value={r}>{r}</option>))}
+            </select>
+            <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Địa chỉ" value={newWh.address} onChange={(e) => setNewWh({ ...newWh, address: e.target.value })} />
+            <div className="grid grid-cols-3 gap-2">
+              <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Lat" value={newWh.lat} onChange={(e) => setNewWh({ ...newWh, lat: e.target.value })} />
+              <input className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Lng" value={newWh.lng} onChange={(e) => setNewWh({ ...newWh, lng: e.target.value })} />
+              <input type="number" className="bg-background border border-default rounded-lg px-3 py-2" placeholder="Sức chứa" value={newWh.capacity} onChange={(e) => setNewWh({ ...newWh, capacity: Number(e.target.value) })} />
+            </div>
+            <select className="bg-background border border-default rounded-lg px-3 py-2" value={newWh.is_sorting_hub ? '1' : '0'} onChange={(e) => setNewWh({ ...newWh, is_sorting_hub: e.target.value === '1' })}>
+              <option value="0">Kho thường</option>
+              <option value="1">Kho trung tâm</option>
+            </select>
+            <div className="flex items-center">
+              <Button disabled={creatingWh || !newWh.code || !newWh.name || !newWh.province} onClick={async () => {
+                setCreatingWh(true)
+                try {
+                  const payload: any = { ...newWh }
+                  payload.is_sorting_hub = newWh.is_sorting_hub ? 1 : 0
+                  const res = await fetch('/api/warehouses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                  if (!res.ok) { const err = await res.json().catch(()=>({})); alert(err?.error || 'Không thể tạo kho') } else { setNewWh({ code: '', name: '', province: '', region: 'north', address: '', lat: '', lng: '', capacity: 0, is_sorting_hub: false }); reloadWarehouses() }
+                } finally { setCreatingWh(false) }
+              }} className="bg-primary text-background hover:bg-[#00A8CC]">{creatingWh ? 'Đang thêm...' : 'Thêm kho'}</Button>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -332,22 +374,54 @@ export default function SettingsPage() {
                   <th className="px-4 py-3 text-left">Vùng</th>
                   <th className="px-4 py-3 text-left">Địa chỉ</th>
                   <th className="px-4 py-3 text-left">Loại</th>
+                  <th className="px-4 py-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingWarehouses ? (
-                  <tr key="loading-wh"><td className="px-4 py-4 text-secondary" colSpan={6}>Đang tải...</td></tr>
+                  <tr key="loading-wh"><td className="px-4 py-4 text-secondary" colSpan={7}>Đang tải...</td></tr>
                 ) : warehouses.length === 0 ? (
-                  <tr key="empty-wh"><td className="px-4 py-4 text-secondary" colSpan={6}>Chưa có dữ liệu</td></tr>
+                  <tr key="empty-wh"><td className="px-4 py-4 text-secondary" colSpan={7}>Chưa có dữ liệu</td></tr>
                 ) : (
                   warehouses.map((w, i) => (
                     <tr key={`${w.warehouse_id}-${w.code}-${i}`} className="border-b border-default">
-                      <td className="px-4 py-3">{w.code}</td>
-                      <td className="px-4 py-3">{w.name}</td>
-                      <td className="px-4 py-3">{w.province}</td>
-                      <td className="px-4 py-3">{w.region}</td>
-                      <td className="px-4 py-3">{w.address}</td>
-                      <td className="px-4 py-3">{w.is_sorting_hub ? 'Kho trung tâm' : 'Kho thường'}</td>
+                      <td className="px-4 py-3">{editingWhId === w.warehouse_id ? (<input defaultValue={w.code} onChange={(e)=>setEditWh({ ...editWh, code: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1" />) : w.code}</td>
+                      <td className="px-4 py-3">{editingWhId === w.warehouse_id ? (<input defaultValue={w.name} onChange={(e)=>setEditWh({ ...editWh, name: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1" />) : w.name}</td>
+                      <td className="px-4 py-3">{editingWhId === w.warehouse_id ? (<input defaultValue={w.province} onChange={(e)=>setEditWh({ ...editWh, province: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1" />) : w.province}</td>
+                      <td className="px-4 py-3">{editingWhId === w.warehouse_id ? (
+                        <select defaultValue={w.region} onChange={(e)=>setEditWh({ ...editWh, region: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1">
+                          {regionOptions.map(x => <option key={x} value={x}>{x}</option>)}
+                        </select>
+                      ) : w.region}</td>
+                      <td className="px-4 py-3">{editingWhId === w.warehouse_id ? (<input defaultValue={w.address || ''} onChange={(e)=>setEditWh({ ...editWh, address: e.target.value as any })} className="bg-background border border-default rounded px-2 py-1" />) : (w.address || '')}</td>
+                      <td className="px-4 py-3">{editingWhId === w.warehouse_id ? (
+                        <select defaultValue={w.is_sorting_hub ? '1':'0'} onChange={(e)=>setEditWh({ ...editWh, is_sorting_hub: (e.target.value==='1') as any })} className="bg-background border border-default rounded px-2 py-1">
+                          <option value="0">Kho thường</option>
+                          <option value="1">Kho trung tâm</option>
+                        </select>
+                      ) : (w.is_sorting_hub ? 'Kho trung tâm' : 'Kho thường')}</td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        {editingWhId === w.warehouse_id ? (
+                          <>
+                            <button className="px-3 py-1 rounded bg-primary text-background" onClick={async ()=>{
+                              const payload: any = { ...editWh }
+                              if (payload.is_sorting_hub !== undefined) payload.is_sorting_hub = payload.is_sorting_hub ? 1 : 0
+                              const res = await fetch(`/api/warehouses/${w.warehouse_id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) })
+                              if (!res.ok) { const err = await res.json().catch(()=>({})); alert(err?.error || 'Không thể cập nhật') } else { setEditingWhId(null); setEditWh({}); reloadWarehouses() }
+                            }}>Lưu</button>
+                            <button className="px-3 py-1 rounded bg-background border border-default" onClick={()=>{ setEditingWhId(null); setEditWh({}) }}>Huỷ</button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="px-3 py-1 rounded bg-background border border-default" onClick={()=>{ setEditingWhId(w.warehouse_id); setEditWh({}) }}>Sửa</button>
+                            <button className="px-3 py-1 rounded bg-red-600 text-white" onClick={async ()=>{
+                              if (!confirm('Xoá kho này? (Chỉ xoá khi không còn gán vào đơn/người dùng)')) return
+                              const res = await fetch(`/api/warehouses/${w.warehouse_id}`, { method: 'DELETE' })
+                              if (!res.ok && res.status !== 204) { const err = await res.json().catch(()=>({})); alert(err?.error || 'Không thể xoá') } else { reloadWarehouses() }
+                            }}>Xoá</button>
+                          </>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

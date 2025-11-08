@@ -169,6 +169,78 @@ export async function deleteFeeRuleHandler(req: Request, res: Response) {
   }
 }
 
+// Warehouses CRUD (admin)
+export async function createWarehouseAdminHandler(req: Request, res: Response) {
+  try {
+    const { code, name, province, region, address, lat, lng, capacity, is_sorting_hub } = req.body || {}
+    if (!code || !name || !province || !region) return res.status(400).json({ error: 'Missing required fields' })
+    if (!ALLOWED_REGIONS.has(region)) return res.status(400).json({ error: 'Invalid region' })
+
+    // Ensure unique code
+    const [exists] = await pool.query('SELECT warehouse_id FROM warehouses WHERE code = ? LIMIT 1', [code])
+    if ((exists as any[]).length > 0) return res.status(409).json({ error: 'Code already exists' })
+
+    const [result] = await pool.query(
+      `INSERT INTO warehouses (code, name, province, region, address, lat, lng, capacity, is_sorting_hub)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [code, name, province, region, address || null, Number(lat) || 0, Number(lng) || 0, Number(capacity) || 0, Number(is_sorting_hub) ? 1 : 0]
+    )
+    // @ts-ignore
+    const id = result.insertId as number
+    const [rows] = await pool.query('SELECT warehouse_id as warehouse_id, code, name, province, region, address, lat, lng, capacity, is_sorting_hub FROM warehouses WHERE warehouse_id = ?', [id])
+    return res.status(201).json((rows as any[])[0])
+  } catch (e: any) {
+    if (e?.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Code already exists' })
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export async function updateWarehouseAdminHandler(req: Request, res: Response) {
+  try {
+    const id = Number(req.params.id)
+    if (!id) return res.status(400).json({ error: 'Invalid id' })
+    const { code, name, province, region, address, lat, lng, capacity, is_sorting_hub } = req.body || {}
+    if (region && !ALLOWED_REGIONS.has(region)) return res.status(400).json({ error: 'Invalid region' })
+
+    const fields: string[] = []
+    const values: any[] = []
+    if (code !== undefined) { fields.push('code = ?'); values.push(code) }
+    if (name !== undefined) { fields.push('name = ?'); values.push(name) }
+    if (province !== undefined) { fields.push('province = ?'); values.push(province) }
+    if (region !== undefined) { fields.push('region = ?'); values.push(region) }
+    if (address !== undefined) { fields.push('address = ?'); values.push(address) }
+    if (lat !== undefined) { fields.push('lat = ?'); values.push(Number(lat) || 0) }
+    if (lng !== undefined) { fields.push('lng = ?'); values.push(Number(lng) || 0) }
+    if (capacity !== undefined) { fields.push('capacity = ?'); values.push(Number(capacity) || 0) }
+    if (is_sorting_hub !== undefined) { fields.push('is_sorting_hub = ?'); values.push(Number(is_sorting_hub) ? 1 : 0) }
+    if (fields.length === 0) return res.status(400).json({ error: 'No changes' })
+    values.push(id)
+    await pool.query(`UPDATE warehouses SET ${fields.join(', ')} WHERE warehouse_id = ?`, values)
+    const [rows] = await pool.query('SELECT warehouse_id as warehouse_id, code, name, province, region, address, lat, lng, capacity, is_sorting_hub FROM warehouses WHERE warehouse_id = ?', [id])
+    const row = (rows as any[])[0]
+    if (!row) return res.status(404).json({ error: 'Not found' })
+    return res.json(row)
+  } catch (e: any) {
+    if (e?.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Code already exists' })
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export async function deleteWarehouseAdminHandler(req: Request, res: Response) {
+  try {
+    const id = Number(req.params.id)
+    if (!id) return res.status(400).json({ error: 'Invalid id' })
+    const [u] = await pool.query('SELECT COUNT(*) as c FROM users WHERE warehouse_id = ?', [id])
+    const [o] = await pool.query('SELECT COUNT(*) as c FROM orders WHERE origin_warehouse_id = ? OR destination_warehouse_id = ? OR current_warehouse_id = ?', [id, id, id])
+    const used = Number((u as any[])[0]?.c || 0) + Number((o as any[])[0]?.c || 0)
+    if (used > 0) return res.status(400).json({ error: 'Warehouse is in use' })
+    await pool.query('DELETE FROM warehouses WHERE warehouse_id = ?', [id])
+    return res.status(204).send()
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
 // Users count + breakdown
 export async function usersCountHandler(_req: Request, res: Response) {
   const [allRows] = await pool.query('SELECT COUNT(*) AS count FROM users')
