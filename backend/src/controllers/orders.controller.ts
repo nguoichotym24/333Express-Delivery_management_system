@@ -43,11 +43,29 @@ export async function listByWarehouseHandler(req: Request, res: Response) {
   const warehouseId = Number(req.params.id)
   if (!warehouseId) return res.status(400).json({ error: 'Invalid warehouse id' })
   const [rows] = await pool.query(
-    `SELECT o.order_id, o.tracking_code, s.code AS current_status,
-            o.sender_lat, o.sender_lng, o.receiver_lat, o.receiver_lng,
-            o.created_at, o.shipper_user_id
+    `SELECT o.order_id,
+            o.tracking_code,
+            s.code AS current_status,
+            o.sender_lat,
+            o.sender_lng,
+            o.receiver_lat,
+            o.receiver_lng,
+            o.origin_warehouse_id,
+            o.destination_warehouse_id,
+            o.current_warehouse_id,
+            ow.name  AS origin_warehouse_name,
+            ow.region AS origin_warehouse_region,
+            dw.name  AS destination_warehouse_name,
+            dw.region AS destination_warehouse_region,
+            cw.name AS current_warehouse_name,
+            cw.is_sorting_hub,
+            o.created_at,
+            o.shipper_user_id
      FROM orders o
      JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     LEFT JOIN warehouses ow ON ow.warehouse_id = o.origin_warehouse_id
+     LEFT JOIN warehouses dw ON dw.warehouse_id = o.destination_warehouse_id
+     LEFT JOIN warehouses cw ON cw.warehouse_id = o.current_warehouse_id
      WHERE o.current_warehouse_id = ?
      ORDER BY o.created_at DESC
      LIMIT 200`,

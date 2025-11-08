@@ -9,7 +9,7 @@ export default function WarehouseDashboard() {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Warehouse Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">Bảng điều khiển kho</h1>
           <p className="text-secondary">Quản lý hàng hóa và phân công shipper</p>
         </div>
 

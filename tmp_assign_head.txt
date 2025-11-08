@@ -1,0 +1,80 @@
+"use client"
+
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { useEffect, useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
+
+type OrderRow = { order_id: number; tracking_code: string; current_status: string; created_at: string; shipper_user_id?: number | null }
+type ShipperRow = { id: number; name: string; email: string; phone: string }
+
+export default function AssignPage() {
+  const { user } = useAuth()
+  const whId = user?.warehouse_id ?? null
+  const [orders, setOrders] = useState<OrderRow[]>([])
+  const [shippers, setShippers] = useState<ShipperRow[]>([])
+  const [selectedOrders, setSelectedOrders] = useState<number[]>([])
+  const [selectedShipper, setSelectedShipper] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [info, setInfo] = useState<string>("")
+  const [error, setError] = useState<string>("")
+  const [query, setQuery] = useState("")
+  const [onlyReady, setOnlyReady] = useState(true)
+  const [onlyUnassigned, setOnlyUnassigned] = useState(true)
+
+  useEffect(() => {
+    if (!whId) return
+    setSelectedOrders([])
+    setSelectedShipper(null)
+    Promise.all([
+      fetch(`/api/orders/warehouse/${whId}`).then((r) => r.json()),
+      fetch(`/api/warehouses/${whId}/shippers`).then((r) => r.json()),
+    ])
+      .then(([o, s]) => {
+        setOrders(Array.isArray(o) ? o : [])
+        setShippers(Array.isArray(s) ? s : [])
+      })
+      .catch(() => {
+        setOrders([])
+        setShippers([])
+      })
+  }, [whId])
+
+  const isEligibleForAssign = (o: OrderRow) => o.current_status === "arrived_at_destination_hub" && !o.shipper_user_id
+
+  const filteredOrders = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return orders.filter((o) => {
+      if (onlyReady && o.current_status !== "arrived_at_destination_hub") return false
+      if (onlyUnassigned && o.shipper_user_id) return false
+      if (!q) return true
+      return o.tracking_code.toLowerCase().includes(q)
+    })
+  }, [orders, query, onlyReady, onlyUnassigned])
+
+  const toggleOrder = (orderId: number) => {
+    const order = orders.find((x) => x.order_id === orderId)
+    if (!order || !isEligibleForAssign(order)) return
+    setSelectedOrders((prev) => (prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]))
+  }
+
+  const handleAssign = async () => {
+    setError("")
+    setInfo("")
+    if (!selectedOrders.length) {
+      setError("Chưa chọn đơn để phân công")
+      return
+    }
+    if (!selectedShipper) {
+      setError("Chưa chọn shipper")
+      return
+    }
+    // Validate tất cả đơn chọn đều hợp lệ
+    const invalid = selectedOrders
+      .map((id) => orders.find((o) => o.order_id === id)!)
+      .filter((o) => !isEligibleForAssign(o))
+    if (invalid.length) {
+      setError(`Có ${invalid.length} đơn không hợp lệ để phân công`)
+      return
+    }
+    setBusy(true)

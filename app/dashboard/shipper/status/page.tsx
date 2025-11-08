@@ -28,6 +28,7 @@ export default function StatusPage() {
   }, [])
 
   const statuses = [
+    { value: 'picked_up', label: 'Đã lấy hàng' },
     { value: 'out_for_delivery', label: 'Đang giao hàng' },
     { value: 'delivered', label: 'Giao hàng thành công' },
     { value: 'delivery_failed', label: 'Giao hàng thất bại' },
@@ -63,7 +64,7 @@ export default function StatusPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Cập nhật trạng thái giao hàng</h1>
-          <p className="text-secondary">Chọn đơn và cập nhật trạng thái</p>
+          <p className="text-secondary">Chọn đơn hàng và cập nhật trạng thái</p>
         </div>
 
         <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
@@ -138,4 +139,3 @@ export default function StatusPage() {
     </DashboardLayout>
   )
 }
-

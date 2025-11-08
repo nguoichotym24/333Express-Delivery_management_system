@@ -1,0 +1,51 @@
+                              className={`rounded-lg px-3 py-1 text-xs font-medium ${s.color}`}
+                            >
+                              {sectionLabel}
+                            </span>
+                            {action && (
+                              <button
+                                className="rounded bg-primary px-3 py-1 text-xs text-background disabled:opacity-50"
+                                disabled={busyOrderId === o.order_id}
+                                onClick={() => handleAction(o, action)}
+                              >
+                                {busyOrderId === o.order_id
+                                  ? "Ðang c?p nh?t..."
+                                  : action.label}
+                              </button>
+                            )}
+                            {canReturnToOrigin(o.current_status) && (
+                              <button
+                                className="rounded bg-red-600 px-3 py-1 text-xs text-white disabled:opacity-50"
+                                disabled={busyOrderId === o.order_id}
+                                onClick={() => handleReturn(o)}
+                              >
+                                G?i tr? kho g?c
+                              </button>
+                            )}
+                            {canFinishReturn(o.current_status) && (
+                              <button
+                                className="rounded bg-red-600/80 px-3 py-1 text-xs text-white disabled:opacity-50"
+                                disabled={busyOrderId === o.order_id}
+                                onClick={() => handleFinishReturn(o)}
+                              >
+                                Hoàn t?t hoàn hàng
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-secondary">
+                          Ngày t?o:{" "}
+                          {new Date(o.created_at).toLocaleString("vi-VN")}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

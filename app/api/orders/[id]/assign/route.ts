@@ -3,11 +3,12 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const token = cookies().get("auth_token")?.value
+    const token = (await cookies()).get("auth_token")?.value
     const body = await req.json()
-    const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(params.id)}/assign`, {
+    const { id } = await context.params
+    const res = await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}/assign`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -21,4 +22,3 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-

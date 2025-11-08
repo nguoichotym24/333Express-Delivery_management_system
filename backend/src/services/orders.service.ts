@@ -80,6 +80,9 @@ export async function createOrder(input: CreateOrderInput) {
     )
     await conn.commit()
 
+    // Lên lịch tự động chuyển created -> waiting_for_pickup sau 30s
+    scheduleAutoWaitingForPickup(orderId, 30_000)
+
     const order = await getOrderById(orderId)
     return order
   } catch (e) {
@@ -155,6 +158,45 @@ export async function getOrderByTracking(tracking: string) {
   return { ...res[0], history: hist }
 }
 
+const sortingHubCache = new Map<number, number | null>()
+
+async function getSortingHubIdForWarehouse(warehouseId?: number | null) {
+  if (!warehouseId) return null
+  if (sortingHubCache.has(warehouseId)) return sortingHubCache.get(warehouseId)!
+  const [rows] = await pool.query('SELECT region FROM warehouses WHERE warehouse_id = ? LIMIT 1', [warehouseId])
+  const row = (rows as any[])[0]
+  if (!row?.region) {
+    sortingHubCache.set(warehouseId, null)
+    return null
+  }
+  const hub = await nearestSortingHub(row.region as Region)
+  const hubId = (hub?.id ?? hub?.warehouse_id) ?? null
+  sortingHubCache.set(warehouseId, hubId)
+  return hubId
+}
+
+async function inferWarehouseForStatus(order: any, status: OrderStatus) {
+  switch (status) {
+    case 'waiting_for_pickup':
+    case 'picked_up':
+    case 'arrived_at_origin_hub':
+    case 'return_in_transit':
+    case 'returned_to_origin':
+      return order.origin_warehouse_id ?? null
+    case 'in_transit_to_sorting_center':
+    case 'arrived_at_sorting_hub':
+      return await getSortingHubIdForWarehouse(order.origin_warehouse_id)
+    case 'in_transit_to_destination_hub':
+    case 'arrived_at_destination_hub':
+    case 'out_for_delivery':
+    case 'delivery_failed':
+    case 'returned_to_destination_hub':
+      return order.destination_warehouse_id ?? null
+    default:
+      return order.current_warehouse_id ?? null
+  }
+}
+
 export async function updateOrderStatus(params: {
   orderId: number
   status: OrderStatus
@@ -169,14 +211,17 @@ export async function updateOrderStatus(params: {
   }
   const newStatusId = await getStatusIdByCode(params.status)
 
+  const derivedWarehouseId =
+    params.warehouseId ?? (await inferWarehouseForStatus(order, params.status)) ?? order.current_warehouse_id ?? null
+
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
     const updates: any[] = [newStatusId]
     let sql = 'UPDATE orders SET current_status_id = ?'
-    if (params.warehouseId) {
+    if (derivedWarehouseId !== null) {
       sql += ', current_warehouse_id = ?'
-      updates.push(params.warehouseId)
+      updates.push(derivedWarehouseId)
     }
     if (params.status === 'delivered') {
       sql += ', delivered_at = NOW()'
@@ -187,7 +232,7 @@ export async function updateOrderStatus(params: {
 
     await conn.query(
       'INSERT INTO order_status_history (order_id, order_status_id, note, warehouse_id) VALUES (?,?,?,?)',
-      [params.orderId, newStatusId, params.note || null, params.warehouseId || null]
+      [params.orderId, newStatusId, params.note || null, derivedWarehouseId]
     )
     await conn.commit()
   } catch (e) {
@@ -196,6 +241,28 @@ export async function updateOrderStatus(params: {
   } finally {
     conn.release()
   }
+}
+
+// In-memory scheduler for light-weight delayed transitions.
+// Lưu ý: không bền vững qua restart; đủ dùng trong môi trường dev/single instance.
+const autoPickupTimers = new Map<number, NodeJS.Timeout>()
+
+export function scheduleAutoWaitingForPickup(orderId: number, delayMs = 30_000) {
+  if (autoPickupTimers.has(orderId)) {
+    clearTimeout(autoPickupTimers.get(orderId)!)
+  }
+  const t = setTimeout(async () => {
+    autoPickupTimers.delete(orderId)
+    try {
+      const order = await getOrderById(orderId)
+      if (!order) return
+      if (order.current_status !== 'created') return
+      await updateOrderStatus({ orderId, status: 'waiting_for_pickup', note: 'Hệ thống: chờ lấy hàng (auto 30s)', warehouseId: null })
+    } catch {
+      // best-effort; bỏ qua lỗi
+    }
+  }, delayMs)
+  autoPickupTimers.set(orderId, t)
 }
 
 export async function computeRouteForTracking(tracking: string) {

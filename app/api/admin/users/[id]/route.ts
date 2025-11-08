@@ -27,12 +27,13 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const body = await req.json()
     const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
-    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(params.id)}`, {
+    const { id } = await context.params
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -47,11 +48,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
-    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(params.id)}`, {
+    const { id } = await context.params
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })

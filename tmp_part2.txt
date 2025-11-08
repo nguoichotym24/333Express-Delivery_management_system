@@ -1,0 +1,250 @@
+      case "arrived_at_origin_hub": {
+        if (!isOrigin(o)) return null;
+        const dest = resolveDestination(o);
+        const origin = o.origin_warehouse_id
+          ? warehousesMap.get(Number(o.origin_warehouse_id))
+          : undefined;
+        if (dest && origin && origin.region === dest.region) {
+          const destId = Number(dest.warehouse_id ?? dest.id);
+          return {
+            label: `Chuy?n d?n kho dích - ${dest.name}`,
+            targetStatus: "in_transit_to_destination_hub",
+            targetWarehouseId: destId,
+            note: `Ði ${dest.name}`,
+          };
+        }
+        const hub = resolveSortingHubFor(o);
+        if (!hub) return null;
+        const hubId = Number(hub.warehouse_id ?? hub.id);
+        return {
+          label: `Chuy?n d?n kho trung tâm - ${hub.name}`,
+          targetStatus: "in_transit_to_sorting_center",
+          targetWarehouseId: hubId,
+          note: `Ði ${hub.name}`,
+        };
+      }
+      case "in_transit_to_sorting_center":
+        if (!isSortingHub(userWarehouse) || !ownsCurrent(o)) return null;
+        return {
+          label: "Ti?p nh?n don",
+          targetStatus: "arrived_at_sorting_hub",
+          targetWarehouseId: warehouseId,
+          note: "Kho trung tâm dã nh?n",
+        };
+      case "arrived_at_sorting_hub": {
+        if (!isSortingHub(userWarehouse) || !ownsCurrent(o)) return null;
+        const dest = resolveDestination(o);
+        if (!dest) return null;
+        const destId = Number(dest.warehouse_id ?? dest.id);
+        return {
+          label: `Chuy?n d?n kho dích - ${dest.name}`,
+          targetStatus: "in_transit_to_destination_hub",
+          targetWarehouseId: destId,
+          note: `Ði ${dest.name}`,
+        };
+      }
+      case "in_transit_to_destination_hub":
+        if (!isDest(o)) return null;
+        return {
+          label: "Ti?p nh?n don",
+          targetStatus: "arrived_at_destination_hub",
+          targetWarehouseId: warehouseId,
+          note: "Kho dích dã nh?n",
+        };
+      default:
+        return null;
+    }
+  };
+
+  const handleAction = async (o: OrderRow, action: ActionConfig | null) => {
+    if (!action) return;
+    if (action.targetWarehouseId == null) {
+      setMessage("Chua xác d?nh du?c kho k? ti?p");
+      return;
+    }
+    setBusyOrderId(o.order_id);
+    setMessage("");
+    try {
+      await mutateStatus(
+        o.order_id,
+        action.targetStatus,
+        action.targetWarehouseId,
+        action.note
+      );
+      setMessage(`Ðã c?p nh?t ${o.tracking_code} ? ${action.targetStatus}`);
+      reload();
+    } catch (e: any) {
+      setMessage(e?.message || "Có l?i x?y ra");
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
+
+  const handleBulkReceiveSorting = async () => {
+    if (!warehouseId || !isSortingHub(userWarehouse)) return;
+    const candidates = (grouped["to-sorting"] || []).filter(
+      (o) => o.current_status === "in_transit_to_sorting_center"
+    );
+    if (!candidates.length) return;
+    if (typeof window !== "undefined") {
+      const ok = window.confirm(
+        `Ti?p nh?n t?t c? ${candidates.length} don dang d?n kho trung tâm?`
+      );
+      if (!ok) return;
+    }
+    setBulkBusy(true);
+    setMessage("");
+    try {
+      await Promise.all(
+        candidates.map((o) =>
+          mutateStatus(
+            o.order_id,
+            "arrived_at_sorting_hub",
+            warehouseId,
+            "Kho trung tâm nh?n hàng (bulk)"
+          )
+        )
+      );
+      setMessage(`Ðã ti?p nh?n ${candidates.length} don d?n kho trung tâm`);
+      reload();
+    } catch (e: any) {
+      setMessage(e?.message || "Không th? ti?p nh?n t?t c? don");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const canReturnToOrigin = (status: string) =>
+    ["arrived_at_destination_hub", "arrived_at_sorting_hub"].includes(status);
+  const canFinishReturn = (status: string) => status === "return_in_transit";
+
+  const handleReturn = async (o: OrderRow) => {
+    if (!warehouseId) return;
+    if (typeof window !== "undefined") {
+      const ok = window.confirm(`G?i tr? kho g?c don ${o.tracking_code}?`);
+      if (!ok) return;
+    }
+    setBusyOrderId(o.order_id);
+    try {
+      // Không truy?n warehouse_id d? backend t? suy ra kho g?c
+      await mutateStatus(
+        o.order_id,
+        "return_in_transit",
+        undefined,
+        "G?i tr? kho g?c"
+      );
+      setMessage(`Ðã chuy?n ${o.tracking_code} sang hoàn hàng`);
+      reload();
+    } catch (e: any) {
+      setMessage(e?.message || "Không th? g?i tr? kho g?c");
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
+
+  const handleFinishReturn = async (o: OrderRow) => {
+    if (!warehouseId) return;
+    if (typeof window !== "undefined") {
+      const ok = window.confirm(
+        `Xác nh?n ${o.tracking_code} dã hoàn v? kho g?c?`
+      );
+      if (!ok) return;
+    }
+    setBusyOrderId(o.order_id);
+    try {
+      // Không truy?n warehouse_id d? backend t? suy ra kho g?c
+      await mutateStatus(
+        o.order_id,
+        "returned_to_origin",
+        undefined,
+        "Ðã hoàn v? kho g?c"
+      );
+      setMessage(`Ðon ${o.tracking_code} dã hoàn t?t hoàn hàng`);
+      reload();
+    } catch (e: any) {
+      setMessage(e?.message || "Không th? c?p nh?t tr?ng thái hoàn hàng");
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-8">
+        <header>
+          <h1 className="text-3xl font-bold mb-2">Qu?n lý lu?ng kho</h1>
+          <p className="text-secondary">
+            Theo dõi và c?p nh?t các don dang ch? x? lý t?i kho c?a b?n.
+          </p>
+        </header>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {SECTION_CONFIG.map((s) => (
+            <div
+              key={s.key}
+              className={`${s.color} rounded-lg border border-default p-6`}
+            >
+              <p className="text-sm text-secondary">{sectionHeading(s.key)}</p>
+              <p className="text-3xl font-bold">
+                {grouped[s.key]?.length || 0}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {message && (
+          <div className="rounded-lg border border-default bg-background p-3 text-sm">
+            {message}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {SECTION_CONFIG.map((s) => {
+            const sectionOrders = grouped[s.key] || [];
+            const sectionLabel = sectionHeading(s.key);
+            const showBulk =
+              s.key === "to-sorting" && isSortingHub(userWarehouse);
+            return (
+              <div
+                key={s.key}
+                className="overflow-hidden rounded-xl border border-default bg-surface"
+              >
+                <div className="flex items-center justify-between border-b border-default bg-background p-6">
+                  <h3 className="font-semibold">{sectionLabel}</h3>
+                  {showBulk && sectionOrders.length > 0 && (
+                    <button
+                      className="rounded bg-primary px-3 py-1 text-sm text-background disabled:opacity-50"
+                      disabled={bulkBusy}
+                      onClick={handleBulkReceiveSorting}
+                    >
+                      {bulkBusy ? "Ðang ti?p nh?n..." : "Ti?p nh?n t?t c?"}
+                    </button>
+                  )}
+                </div>
+                <div className="divide-y divide-default">
+                  {sectionOrders.length === 0 && (
+                    <div className="p-6 text-sm text-secondary">
+                      Chua có don phù h?p.
+                    </div>
+                  )}
+                  {sectionOrders.map((o) => {
+                    const action = primaryActionFor(o);
+                    return (
+                      <div
+                        key={o.order_id}
+                        className="p-6 transition-colors hover:bg-background"
+                      >
+                        <div className="mb-3 flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold text-primary">
+                              {o.tracking_code}
+                            </p>
+                            <p className="text-sm text-secondary">
+                              Tr?ng thái:{" "}
+                              <span className="font-medium text-foreground">
+                                {o.current_status}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span

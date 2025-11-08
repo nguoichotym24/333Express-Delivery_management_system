@@ -1,0 +1,250 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { useAuth } from "@/lib/auth-context";
+
+type OrderRow = {
+  order_id: number;
+  tracking_code: string;
+  current_status: string;
+  created_at: string;
+  origin_warehouse_id?: number | null;
+  destination_warehouse_id?: number | null;
+  current_warehouse_id?: number | null;
+};
+
+type WarehouseMeta = {
+  warehouse_id?: number;
+  id?: number;
+  name: string;
+  code: string;
+  region: string;
+  address?: string;
+  is_sorting_hub?: number | boolean;
+};
+
+type ActionConfig = {
+  label: string;
+  targetStatus: string;
+  targetWarehouseId?: number | null;
+  note?: string;
+};
+
+const SECTION_CONFIG = [
+  {
+    key: "waiting",
+    baseLabel: "Ðon ch? ti?p nh?n",
+    color: "bg-orange-500/10 text-orange-400",
+    statuses: ["waiting_for_pickup", "picked_up"],
+  },
+  {
+    key: "origin",
+    baseLabel: "T?i kho g?i",
+    color: "bg-purple-500/10 text-purple-400",
+    statuses: ["arrived_at_origin_hub"],
+  },
+  {
+    key: "to-sorting",
+    baseLabel: "Ðang t?i kho trung tâm",
+    color: "bg-yellow-500/10 text-yellow-400",
+    statuses: ["in_transit_to_sorting_center"],
+  },
+  {
+    key: "sorting",
+    baseLabel: "T?i kho trung tâm",
+    color: "bg-blue-500/10 text-blue-400",
+    statuses: ["arrived_at_sorting_hub"],
+  },
+  {
+    key: "to-destination",
+    baseLabel: "Ðang t?i kho dích",
+    color: "bg-teal-500/10 text-teal-400",
+    statuses: ["in_transit_to_destination_hub"],
+  },
+  {
+    key: "destination",
+    baseLabel: "T?i kho dích",
+    color: "bg-emerald-500/10 text-emerald-400",
+    statuses: ["arrived_at_destination_hub"],
+  },
+];
+
+const isSortingHub = (w?: WarehouseMeta) => {
+  if (!w) return false;
+  if (typeof w.is_sorting_hub === "boolean") return w.is_sorting_hub;
+  if (typeof w.is_sorting_hub === "number") return w.is_sorting_hub === 1;
+  return false;
+};
+
+export default function SortingPage() {
+  const { user } = useAuth();
+  const warehouseId =
+    user?.warehouse_id != null ? Number(user.warehouse_id) : null;
+
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseMeta[]>([]);
+  const [busyOrderId, setBusyOrderId] = useState<number | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!warehouseId) return;
+    reload();
+  }, [warehouseId]);
+
+  useEffect(() => {
+    fetch("/api/warehouses")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setWarehouses(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const warehousesMap = useMemo(() => {
+    const map = new Map<number, WarehouseMeta>();
+    warehouses.forEach((w: any) => {
+      const key = Number(w.warehouse_id ?? w.id);
+      if (!Number.isNaN(key)) map.set(key, w);
+    });
+    return map;
+  }, [warehouses]);
+
+  const userWarehouse =
+    warehouseId != null ? warehousesMap.get(warehouseId) : undefined;
+
+  const reload = () => {
+    if (!warehouseId) return;
+    fetch(`/api/orders/warehouse/${warehouseId}`)
+      .then((r) => r.json())
+      .then((data) => setOrders(Array.isArray(data) ? data : []))
+      .catch(() => setOrders([]));
+  };
+
+  const sameWh = (val?: number | string | null) =>
+    warehouseId != null && val != null && Number(val) === warehouseId;
+  const isOrigin = (o: OrderRow) => sameWh(o.origin_warehouse_id ?? null);
+  const isDest = (o: OrderRow) => sameWh(o.destination_warehouse_id ?? null);
+  const ownsCurrent = (o: OrderRow) =>
+    sameWh(o.current_warehouse_id ?? null) ||
+    (!o.current_warehouse_id && isOrigin(o));
+
+  const sortingHubForRegion = (region?: string) =>
+    warehouses.find((w) => w.region === region && isSortingHub(w));
+  const resolveSortingHubFor = (o: OrderRow) => {
+    const origin = o.origin_warehouse_id
+      ? warehousesMap.get(Number(o.origin_warehouse_id))
+      : undefined;
+    return (
+      sortingHubForRegion(origin?.region) ||
+      (userWarehouse && sortingHubForRegion(userWarehouse.region))
+    );
+  };
+  const resolveDestination = (o: OrderRow) =>
+    o.destination_warehouse_id
+      ? warehousesMap.get(Number(o.destination_warehouse_id))
+      : undefined;
+
+  const shouldDisplayInSection = (o: OrderRow, sectionKey: string) => {
+    switch (sectionKey) {
+      case "waiting":
+      case "origin":
+        return isOrigin(o);
+      case "to-sorting":
+      case "sorting":
+        return isSortingHub(userWarehouse) && ownsCurrent(o);
+      case "to-destination":
+      case "destination":
+        return isDest(o);
+      default:
+        return false;
+    }
+  };
+
+  const grouped = useMemo(() => {
+    const b: Record<string, OrderRow[]> = {};
+    for (const s of SECTION_CONFIG) b[s.key] = [];
+    for (const o of orders) {
+      const s = SECTION_CONFIG.find((x) =>
+        x.statuses.includes(o.current_status)
+      );
+      if (s && shouldDisplayInSection(o, s.key)) b[s.key].push(o);
+    }
+    return b;
+  }, [orders, warehouseId, userWarehouse]);
+
+  const sectionHeading = (key: string) => {
+    const base = SECTION_CONFIG.find((s) => s.key === key)?.baseLabel || "";
+    if (!userWarehouse) return base;
+    switch (key) {
+      case "waiting":
+      case "origin":
+      case "sorting":
+      case "to-destination":
+      case "destination":
+        return `${base} - ${userWarehouse.name}`;
+      case "to-sorting": {
+        const hub = resolveSortingHubFor({} as any) || undefined;
+        return hub ? `${base} - ${hub.name}` : base;
+      }
+      default:
+        return base;
+    }
+  };
+
+  const mutateStatus = async (
+    orderId: number,
+    targetStatus: string,
+    whTarget?: number | null,
+    note?: string
+  ) => {
+    const payload = {
+      status: targetStatus,
+      warehouse_id: whTarget ?? warehouseId,
+      note,
+    };
+    const res = await fetch(`/api/orders/${orderId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || "Không th? c?p nh?t tr?ng thái");
+    }
+  };
+
+  const primaryActionFor = (o: OrderRow): ActionConfig | null => {
+    if (!warehouseId) return null;
+    switch (o.current_status) {
+      case "waiting_for_pickup":
+        if (!isOrigin(o) && !ownsCurrent(o)) return null;
+        if (isOrigin(o) && isDest(o)) {
+          return {
+            label: "Ti?p nh?n don",
+            targetStatus: "arrived_at_destination_hub",
+            targetWarehouseId: warehouseId,
+            note: "Kho dã ti?p nh?n hàng",
+          };
+        }
+        return {
+          label: "Ti?p nh?n don",
+          targetStatus: "arrived_at_origin_hub",
+          targetWarehouseId: warehouseId,
+          note: "Kho dã ti?p nh?n hàng",
+        };
+      case "picked_up":
+        if (!isOrigin(o) && !ownsCurrent(o)) return null;
+        if (isOrigin(o) && isDest(o)) {
+          return {
+            label: "Xác nh?n vào kho",
+            targetStatus: "arrived_at_destination_hub",
+            targetWarehouseId: warehouseId,
+          };
+        }
+        return {
+          label: "Xác nh?n vào kho",
+          targetStatus: "arrived_at_origin_hub",
+          targetWarehouseId: warehouseId,
+        };
