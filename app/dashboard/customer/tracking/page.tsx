@@ -1,34 +1,77 @@
 "use client"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import orders from "@/data/orders.json"
+import { statusLabel } from "@/lib/status"
+
+type OrderHistoryItem = {
+  order_status_history_id: number
+  status: string
+  note: string | null
+  warehouse_name?: string | null
+  created_at: string
+}
+
+type OrderResponse = {
+  order_id: number
+  tracking_code: string
+  sender_name: string
+  sender_phone: string
+  sender_address: string
+  receiver_name: string
+  receiver_phone: string
+  receiver_address: string
+  created_at: string
+  current_status: string
+  history: OrderHistoryItem[]
+}
 
 export default function TrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState("")
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [order, setOrder] = useState<OrderResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const handleSearch = () => {
-    const order = (orders as any).orders.find((o: any) => o.trackingNumber === trackingNumber)
-    setSelectedOrder(order || null)
+  const handleSearch = async () => {
+    setError("")
+    setOrder(null)
+    const code = trackingNumber.trim()
+    if (!code) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/orders/public/track/${encodeURIComponent(code)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Không tìm thấy đơn hàng")
+      setOrder(data)
+    } catch (e: any) {
+      setError(e?.message || "Có lỗi xảy ra")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const getStatusColor = (status: string) => ({
-    order_created: "bg-blue-500/10 text-blue-400",
-    picked_up: "bg-purple-500/10 text-purple-400",
-    at_warehouse: "bg-yellow-500/10 text-yellow-400",
-    in_transit: "bg-cyan-500/10 text-cyan-400",
-    delivered: "bg-green-500/10 text-green-400",
-  }[status] || "bg-gray-500/10 text-gray-400")
-
-  const getStatusLabel = (status: string) => ({
-    order_created: "Đơn hàng đã tạo",
-    picked_up: "Hàng đã lấy",
-    at_warehouse: "Tới kho",
-    in_transit: "Đang giao",
-    delivered: "Đã giao",
-  }[status] || status)
+  const timeline = useMemo(() => {
+    if (!order) return [] as Array<{ label: string; time: Date }>
+    const noWarehouseStatuses = new Set([
+      "created",
+      "out_for_delivery",
+      "delivered",
+      "delivery_failed",
+      "return_in_transit",
+      "cancelled",
+      "lost",
+    ])
+    return (order.history || []).map((h) => {
+      const base = statusLabel(h.status)
+      const label = noWarehouseStatuses.has(h.status)
+        ? base
+        : h.warehouse_name
+        ? `${base} – ${h.warehouse_name}`
+        : base
+      return { label, time: new Date(h.created_at) }
+    })
+  }, [order])
 
   return (
     <DashboardLayout>
@@ -39,30 +82,34 @@ export default function TrackingPage() {
         </div>
 
         <div className="bg-surface border border-default rounded-xl p-8">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <input
               type="text"
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
-              placeholder="Nhập mã vận đơn (VD: DH001234567890)"
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Nhập mã vận đơn (VD: VN20251024-0001)"
               className="flex-1 bg-background border border-default rounded-lg px-4 py-3 text-foreground placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <Button onClick={handleSearch} className="bg-primary text-background hover:bg-[#00A8CC] px-8">Tìm kiếm</Button>
+            <Button onClick={handleSearch} disabled={loading} className="bg-primary text-background hover:bg-[#00A8CC] px-8">
+              {loading ? "Đang tìm..." : "Tìm kiếm"}
+            </Button>
+            {error && <span className="text-sm text-red-500">{error}</span>}
           </div>
         </div>
 
-        {selectedOrder ? (
+        {order ? (
           <div className="space-y-6">
             <div className="bg-surface border border-default rounded-xl p-8">
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div>
                   <p className="text-secondary text-sm mb-2">Mã vận đơn</p>
-                  <p className="text-2xl font-bold text-primary">{selectedOrder.trackingNumber}</p>
+                  <p className="text-2xl font-bold text-primary">{order.tracking_code}</p>
                 </div>
                 <div>
                   <p className="text-secondary text-sm mb-2">Trạng thái</p>
-                  <div className={`inline-block px-4 py-2 rounded-lg font-medium ${getStatusColor(selectedOrder.status)}`}>
-                    {getStatusLabel(selectedOrder.status)}
+                  <div className="inline-block px-4 py-2 rounded-lg font-medium bg-primary/10 text-primary">
+                    {statusLabel(order.current_status)}
                   </div>
                 </div>
               </div>
@@ -71,17 +118,17 @@ export default function TrackingPage() {
                 <div>
                   <h3 className="font-semibold mb-4">Người gửi</h3>
                   <div className="space-y-2 text-sm">
-                    <p className="font-medium">{selectedOrder.senderInfo.name}</p>
-                    <p className="text-secondary">{selectedOrder.senderInfo.address}</p>
-                    <p className="text-secondary">{selectedOrder.senderInfo.phone}</p>
+                    <p className="font-medium">{order.sender_name}</p>
+                    <p className="text-secondary">{order.sender_address}</p>
+                    <p className="text-secondary">{order.sender_phone}</p>
                   </div>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-4">Người nhận</h3>
                   <div className="space-y-2 text-sm">
-                    <p className="font-medium">{selectedOrder.receiverInfo.name}</p>
-                    <p className="text-secondary">{selectedOrder.receiverInfo.address}</p>
-                    <p className="text-secondary">{selectedOrder.receiverInfo.phone}</p>
+                    <p className="font-medium">{order.receiver_name}</p>
+                    <p className="text-secondary">{order.receiver_address}</p>
+                    <p className="text-secondary">{order.receiver_phone}</p>
                   </div>
                 </div>
               </div>
@@ -90,62 +137,32 @@ export default function TrackingPage() {
             <div className="bg-surface border border-default rounded-xl p-8">
               <h3 className="font-semibold mb-6">Lịch sử cập nhật</h3>
               <div className="space-y-4">
-                {selectedOrder.timeline.map((event: any, index: number) => (
+                {timeline.map((e, index) => (
                   <div key={index} className="flex gap-4">
                     <div className="flex flex-col items-center">
                       <div className="w-4 h-4 bg-primary rounded-full"></div>
-                      {index < selectedOrder.timeline.length - 1 && <div className="w-0.5 h-12 bg-default mt-2"></div>}
+                      {index < timeline.length - 1 && <div className="w-0.5 h-12 bg-default mt-2"></div>}
                     </div>
                     <div className="pb-4">
-                      <p className="font-medium">{event.description}</p>
-                      <p className="text-secondary text-sm">{new Date(event.timestamp).toLocaleString("vi-VN")}</p>
+                      <p className="font-medium">{e.label}</p>
+                      <p className="text-secondary text-sm">{e.time.toLocaleString("vi-VN")}</p>
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            <div className="bg-surface border border-default rounded-xl p-8">
-              <h3 className="font-semibold mb-6">Sản phẩm</h3>
-              <div className="space-y-4">
-                {selectedOrder.items.map((item: any, index: number) => (
-                  <div key={index} className="flex gap-4 pb-4 border-b border-default last:border-0">
-                    <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-20 h-20 rounded-lg bg-background object-cover" />
-                    <div className="flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-secondary text-sm">Số lượng: {item.quantity}</p>
-                      <p className="text-primary font-semibold">{(item.price * item.quantity).toLocaleString("vi-VN")} ₫</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-surface border border-default rounded-xl p-8">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-secondary">Tổng tiền hàng</span>
-                  <span className="font-medium">{selectedOrder.totalAmount.toLocaleString("vi-VN")} ₫</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-secondary">Phí vận chuyển</span>
-                  <span className="font-medium">{selectedOrder.shippingFee.toLocaleString("vi-VN")} ₫</span>
-                </div>
-                <div className="border-t border-default pt-3 flex justify-between">
-                  <span className="font-semibold">Tổng cộng</span>
-                  <span className="text-primary font-bold text-lg">{(selectedOrder.totalAmount + selectedOrder.shippingFee).toLocaleString("vi-VN")} ₫</span>
-                </div>
+                {timeline.length === 0 && (
+                  <p className="text-secondary text-sm">Chưa có lịch sử trạng thái.</p>
+                )}
               </div>
             </div>
           </div>
-        ) : trackingNumber ? (
+        ) : !loading && trackingNumber ? (
           <div className="bg-surface border border-default rounded-xl p-8 text-center">
             <p className="text-secondary">Không tìm thấy đơn hàng với mã vận đơn này</p>
           </div>
         ) : (
           <div className="bg-surface border border-default rounded-xl p-12 text-center">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">📦</span>
+              <span className="text-2xl">🔎</span>
             </div>
             <p className="text-secondary">Nhập mã vận đơn để bắt đầu theo dõi</p>
           </div>
@@ -154,3 +171,4 @@ export default function TrackingPage() {
     </DashboardLayout>
   )
 }
+
