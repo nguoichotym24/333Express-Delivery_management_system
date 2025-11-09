@@ -77,9 +77,16 @@ export async function listByWarehouseHandler(req: Request, res: Response) {
 export async function listByShipperMeHandler(req: Request, res: Response) {
   const shipperId = req.user!.id
   const [rows] = await pool.query(
-    `SELECT o.order_id, o.tracking_code, s.code AS current_status,
-            o.sender_lat, o.sender_lng, o.receiver_lat, o.receiver_lng,
-            o.created_at
+    `SELECT o.order_id,
+            o.tracking_code,
+            s.code AS current_status,
+            o.sender_lat,
+            o.sender_lng,
+            o.receiver_lat,
+            o.receiver_lng,
+            o.shipping_fee,
+            o.created_at,
+            o.delivered_at
      FROM orders o
      JOIN order_statuses s ON s.order_status_id = o.current_status_id
      WHERE o.shipper_user_id = ?

@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { statusLabel } from "@/lib/status"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 type OrderRow = {
   order_id: number
@@ -13,6 +15,8 @@ type OrderRow = {
 }
 
 export default function StatusPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [selectedOrder, setSelectedOrder] = useState<number | null>(null)
   const [status, setStatus] = useState<string>("")
@@ -20,6 +24,13 @@ export default function StatusPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState<string>("")
+
+  // Role guard
+  useEffect(() => {
+    if (!loading && user && user.role !== 'shipper') {
+      router.replace(`/dashboard/${user.role}`)
+    }
+  }, [user, loading, router])
 
   useEffect(() => {
     fetch('/api/orders/shipper')
@@ -135,4 +146,3 @@ export default function StatusPage() {
     </DashboardLayout>
   )
 }
-

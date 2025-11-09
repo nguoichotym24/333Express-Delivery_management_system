@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { statusLabel } from "@/lib/status"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 const RouteMap = dynamic(() => import("@/components/map/route-map-client"), { ssr: false })
 
@@ -19,10 +21,19 @@ type OrderRow = {
 }
 
 export default function DeliveriesPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
   const [rows, setRows] = useState<OrderRow[]>([])
   const [filter, setFilter] = useState<string>("all")
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [route, setRoute] = useState<any | null>(null)
+
+  // Role guard
+  useEffect(() => {
+    if (!loading && user && user.role !== 'shipper') {
+      router.replace(`/dashboard/${user.role}`)
+    }
+  }, [user, loading, router])
 
   useEffect(() => {
     fetch("/api/orders/shipper")
@@ -127,4 +138,3 @@ export default function DeliveriesPage() {
     </DashboardLayout>
   )
 }
-

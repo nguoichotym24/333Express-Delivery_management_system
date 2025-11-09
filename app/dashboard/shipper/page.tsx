@@ -3,40 +3,67 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import shippers from "@/data/shippers.json"
+import { useAuth } from "@/lib/auth-context"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+
+type OrderRow = { order_id: number; current_status: string }
 
 export default function ShipperDashboard() {
-  const shipper = shippers.shippers[0]
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const [orders, setOrders] = useState<OrderRow[]>([])
+
+  // Role guard: only shipper
+  useEffect(() => {
+    if (!loading && user && user.role !== 'shipper') {
+      router.replace(`/dashboard/${user.role}`)
+    }
+  }, [user, loading, router])
+
+  useEffect(() => {
+    fetch('/api/orders/shipper')
+      .then(r => r.json())
+      .then((data) => setOrders(Array.isArray(data) ? data : []))
+      .catch(() => setOrders([]))
+  }, [])
+
+  const stats = useMemo(() => {
+    const failedSet = new Set(['delivery_failed'])
+    let total = orders.length
+    let delivered = 0
+    let failed = 0
+    for (const o of orders) {
+      if (o.current_status === 'delivered') delivered++
+      else if (failedSet.has(o.current_status)) failed++
+    }
+    const delivering = Math.max(0, total - delivered - failed)
+    return { total, delivering, delivered, failed }
+  }, [orders])
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Bảng điều khiển Shipper</h1>
-          <p className="text-secondary">Quản lý giao hàng và doanh thu của bạn</p>
+          <p className="text-secondary">Quản lý giao hàng và thu nhập của bạn</p>
         </div>
 
         <div className="bg-surface border border-default rounded-xl p-8">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             <div>
               <p className="text-secondary text-sm mb-2">Tên</p>
-              <p className="text-2xl font-bold">{shipper.name}</p>
+              <p className="text-2xl font-bold">{user?.name || '-'}</p>
+              <p className="text-sm text-secondary">{user?.email}</p>
             </div>
             <div>
-              <p className="text-secondary text-sm mb-2">Phương tiện</p>
-              <p className="font-medium">{shipper.vehicleType}</p>
-              <p className="text-secondary text-sm">{shipper.vehicleNumber}</p>
+              <p className="text-secondary text-sm mb-2">Điện thoại</p>
+              <p className="font-medium">{user?.phone || '-'}</p>
             </div>
             <div>
-              <p className="text-secondary text-sm mb-2">Đánh giá</p>
-              <p className="text-2xl font-bold text-primary">{shipper.rating}/5</p>
-              <p className="text-secondary text-sm">{shipper.successRate}% thành công</p>
-            </div>
-            <div>
-              <p className="text-secondary text-sm mb-2">Trạng thái</p>
-              <div className="inline-block px-3 py-1 rounded-lg bg-green-500/10 text-green-400 text-sm font-medium">
-                {shipper.status === "available" ? "Sẵn sàng" : "Bận"}
-              </div>
+              <p className="text-secondary text-sm mb-2">Tổng quan</p>
+              <p className="text-sm">Đã giao: <span className="font-semibold text-green-500">{stats.delivered}</span></p>
+              <p className="text-sm">Đang giao: <span className="font-semibold text-blue-500">{stats.delivering}</span></p>
             </div>
           </div>
         </div>
@@ -46,7 +73,7 @@ export default function ShipperDashboard() {
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
               <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
               <h3 className="text-xl font-semibold mb-2">Danh sách giao hàng</h3>
-              <p className="text-secondary mb-4 text-sm">Xem danh sách đơn hàng được giao cho bạn</p>
+              <p className="text-secondary mb-4 text-sm">Xem các đơn được giao cho bạn</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem danh sách</Button>
             </div>
           </Link>
@@ -63,9 +90,9 @@ export default function ShipperDashboard() {
           <Link href="/dashboard/shipper/earnings">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
               <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
-              <h3 className="text-xl font-semibold mb-2">Thống kê doanh thu</h3>
-              <p className="text-secondary mb-4 text-sm">Xem doanh thu và hoa hồng</p>
-              <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem thống kê</Button>
+              <h3 className="text-xl font-semibold mb-2">Thống kê thu nhập</h3>
+              <p className="text-secondary mb-4 text-sm">Xem thu nhập và hoa hồng</p>
+              <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem thu nhập</Button>
             </div>
           </Link>
 
@@ -73,7 +100,7 @@ export default function ShipperDashboard() {
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
               <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
               <h3 className="text-xl font-semibold mb-2">Lịch sử giao hàng</h3>
-              <p className="text-secondary mb-4 text-sm">Xem lịch sử giao hàng cá nhân của bạn</p>
+              <p className="text-secondary mb-4 text-sm">Xem lịch sử giao hàng cá nhân</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem lịch sử</Button>
             </div>
           </Link>
@@ -82,3 +109,4 @@ export default function ShipperDashboard() {
     </DashboardLayout>
   )
 }
+

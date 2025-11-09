@@ -1,15 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog"
 import { Mail, Phone, MapPin, User } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function ShipperProfilePage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const [editOpen, setEditOpen] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && user && user.role !== 'shipper') {
+      router.replace(`/dashboard/${user.role}`)
+    }
+  }, [user, loading, router])
 
   if (!user) return null
 
