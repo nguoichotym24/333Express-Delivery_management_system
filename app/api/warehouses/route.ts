@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
     const res = await fetch(`${API_BASE}/admin/warehouses`, {
       method: 'POST',

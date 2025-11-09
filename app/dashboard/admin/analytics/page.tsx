@@ -8,22 +8,22 @@ type DayAgg = { day: string; orders: number; revenue: number }
 
 export default function AnalyticsPage() {
   const [byDay, setByDay] = useState<DayAgg[]>([])
-  const [totals, setTotals] = useState<{ count: number }>({ count: 0 })
-  const [revenue, setRevenue] = useState<{ revenue: number }>({ revenue: 0 })
+  const [totals, setTotals] = useState<{ total_count?: number; delivered_count?: number; failed_count?: number; completion_rate?: number; orders_today?: number }>({})
+  const [revenue, setRevenue] = useState<{ revenue?: number; revenue_today?: number }>({})
 
   useEffect(() => {
     fetch('/api/admin/analytics').then(r => r.json()).then((data) => {
-      setTotals(data?.totals || { count: 0 })
-      setRevenue(data?.revenue || { revenue: 0 })
+      setTotals(data?.totals || {})
+      setRevenue(data?.revenue || {})
       setByDay(Array.isArray(data?.byDay) ? data.byDay.reverse() : [])
     })
   }, [])
 
-  const systemStats = useMemo(() => byDay.map(d => ({ month: d.day, orders: d.orders, revenue: d.revenue, commission: d.revenue * 0.25, deliveryRate: 98 })), [byDay])
-  const totalOrders = totals.count || 0
-  const totalRevenue = revenue.revenue || 0
+  const systemStats = useMemo(() => byDay.map(d => ({ month: d.day, orders: d.orders, revenue: d.revenue, commission: d.revenue * 0.25 })), [byDay])
+  const totalOrders = Number(totals.total_count || 0)
+  const totalRevenue = Number(revenue.revenue || 0)
   const totalCommission = totalRevenue * 0.25
-  const avgDeliveryRate = '98.0'
+  const completionRate = Number(totals.completion_rate || 0).toFixed(1)
   const revenueDistribution = [
     { name: 'Doanh thu giao hàng', value: totalRevenue * 0.7 },
     { name: 'Hoa hồng hệ thống', value: totalCommission },
@@ -44,7 +44,7 @@ export default function AnalyticsPage() {
             { label: 'Tổng đơn hàng', value: totalOrders.toLocaleString(), color: 'bg-blue-500/10 text-blue-400' },
             { label: 'Tổng doanh thu', value: `${(totalRevenue / 1_000_000_000).toFixed(1)}B`, color: 'bg-primary/10 text-primary' },
             { label: 'Tổng hoa hồng', value: `${(totalCommission / 1_000_000_000).toFixed(1)}B`, color: 'bg-yellow-500/10 text-yellow-400' },
-            { label: 'Tỷ lệ hoàn thành', value: `${avgDeliveryRate}%`, color: 'bg-green-500/10 text-green-400' },
+            { label: 'Tỷ lệ hoàn thành', value: `${completionRate}%`, color: 'bg-green-500/10 text-green-400' },
           ].map((stat, i) => (
             <div key={i} className={`${stat.color} rounded-lg p-6 border border-default`}>
               <p className="text-secondary text-sm mb-2">{stat.label}</p>
@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="bg-surface border border-default rounded-xl p-8">
-            <h3 className="font-semibold mb-6">Phân bố doanh thu</h3>
+            <h3 className="font-semibold mb-6">Phân bổ doanh thu</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={revenueDistribution} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${(Number(value) / 1_000_000).toFixed(0)}M`} outerRadius={80} fill="#8884d8" dataKey="value">

@@ -34,6 +34,24 @@ export async function updateStatusHandler(req: Request, res: Response) {
   const id = Number(req.params.id)
   const { status, note, warehouse_id } = req.body || {}
   if (!status) return res.status(400).json({ error: 'Missing status' })
+  // If shipper calls this endpoint, enforce ownership and allowed statuses
+  if (req.user?.role === 'shipper') {
+    const [rows] = await pool.query(
+      `SELECT o.order_id, o.shipper_user_id, s.code AS current_status
+       FROM orders o JOIN order_statuses s ON s.order_status_id = o.current_status_id
+       WHERE o.order_id = ? LIMIT 1`,
+      [id]
+    )
+    const row = (rows as any[])[0]
+    if (!row) return res.status(404).json({ error: 'Not found' })
+    if (Number(row.shipper_user_id || 0) !== Number(req.user.id)) {
+      return res.status(403).json({ error: 'Not your assignment' })
+    }
+    const ALLOWED_BY_SHIPPER = new Set(['picked_up','out_for_delivery','delivered','delivery_failed'])
+    if (!ALLOWED_BY_SHIPPER.has(String(status))) {
+      return res.status(403).json({ error: 'Status not allowed for shipper' })
+    }
+  }
   await updateOrderStatus({ orderId: id, status, note, warehouseId: warehouse_id ? Number(warehouse_id) : null })
   const order = await getOrderById(id)
   res.json(order)

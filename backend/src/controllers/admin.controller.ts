@@ -38,17 +38,64 @@ export async function listUsersHandler(req: Request, res: Response) {
 }
 
 export async function analyticsHandler(_req: Request, res: Response) {
-  const [ordersCount] = await pool.query('SELECT COUNT(*) as count FROM orders')
-  const [revenue] = await pool.query('SELECT COALESCE(SUM(o.shipping_fee),0) as revenue FROM orders o JOIN order_statuses s ON s.order_status_id = o.current_status_id WHERE s.code = "delivered"')
+  // Totals
+  const [ordersCount] = await pool.query('SELECT COUNT(*) as total_count FROM orders')
+  const totalsRaw = (ordersCount as any[])[0] || { total_count: 0 }
+
+  // Delivered / failed totals for completion rate
+  const [deliveredRows] = await pool.query(
+    `SELECT COUNT(*) as delivered_count FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE s.code = 'delivered'`
+  )
+  const [failedRows] = await pool.query(
+    `SELECT COUNT(*) as failed_count FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE s.code IN ('delivery_failed','cancelled','lost')`
+  )
+
+  // Total revenue (delivered only)
+  const [revenueRows] = await pool.query(
+    `SELECT COALESCE(SUM(o.shipping_fee),0) as revenue FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE s.code = 'delivered'`
+  )
+
+  // Today orders and revenue
+  const [todayOrdersRows] = await pool.query(
+    `SELECT COUNT(*) as orders_today FROM orders WHERE DATE(created_at) = CURDATE()`
+  )
+  const [todayRevenueRows] = await pool.query(
+    `SELECT COALESCE(SUM(o.shipping_fee),0) as revenue_today FROM orders o
+     JOIN order_statuses s ON s.order_status_id = o.current_status_id
+     WHERE s.code = 'delivered' AND DATE(o.delivered_at) = CURDATE()`
+  )
+
+  // By day aggregates for charts (last 14 days by created date)
   const [byDay] = await pool.query(`
     SELECT DATE(created_at) as day, COUNT(*) as orders, SUM(shipping_fee) as revenue
     FROM orders
     GROUP BY DATE(created_at)
     ORDER BY day DESC
     LIMIT 14`)
+
+  const delivered_count = (deliveredRows as any[])[0]?.delivered_count || 0
+  const failed_count = (failedRows as any[])[0]?.failed_count || 0
+  const total_count = Number(totalsRaw.total_count || 0)
+  const completion_rate = total_count > 0 ? (delivered_count / total_count) * 100 : 0
+
   res.json({
-    totals: (ordersCount as any[])[0],
-    revenue: (revenue as any[])[0],
+    totals: {
+      total_count,
+      delivered_count,
+      failed_count,
+      completion_rate,
+      orders_today: (todayOrdersRows as any[])[0]?.orders_today || 0,
+    },
+    revenue: {
+      revenue: (revenueRows as any[])[0]?.revenue || 0,
+      revenue_today: (todayRevenueRows as any[])[0]?.revenue_today || 0,
+    },
     byDay,
   })
 }

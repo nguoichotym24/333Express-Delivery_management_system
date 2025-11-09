@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const { id } = params
     const body = await req.json()
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
     const res = await fetch(`${API_BASE}/admin/warehouses/${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
     const res = await fetch(`${API_BASE}/admin/warehouses/${encodeURIComponent(id)}`, {
       method: 'DELETE',

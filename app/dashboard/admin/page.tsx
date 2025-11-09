@@ -10,6 +10,8 @@ export default function AdminDashboard() {
   const [usersCount, setUsersCount] = useState<number>(0);
   const [byDay, setByDay] = useState<DayAgg[]>([]);
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [ordersToday, setOrdersToday] = useState<number>(0);
+  const [revenueToday, setRevenueToday] = useState<number>(0);
   useEffect(() => {
     // Users count (exact)
     fetch("/api/admin/users/count")
@@ -34,6 +36,8 @@ export default function AdminDashboard() {
       .then((data) => {
         setByDay(Array.isArray(data?.byDay) ? data.byDay : []);
         setTotalRevenue(Number(data?.revenue?.revenue || 0));
+        setOrdersToday(Number(data?.totals?.orders_today || 0));
+        setRevenueToday(Number(data?.revenue?.revenue_today || 0));
       })
       .catch(() => {
         setByDay([]);
@@ -41,15 +45,14 @@ export default function AdminDashboard() {
       });
   }, []);
   const today = new Date().toISOString().slice(0, 10);
-  const todayAgg = useMemo(
-    () =>
-      byDay.find((d) => d.day === today) || {
-        day: today,
-        orders: 0,
-        revenue: 0,
-      },
-    [byDay, today]
-  );
+  const todayAgg = useMemo(() => {
+    const fromSeries = byDay.find((d) => d.day === today);
+    return {
+      day: today,
+      orders: fromSeries?.orders ?? ordersToday,
+      revenue: fromSeries?.revenue ?? revenueToday,
+    };
+  }, [byDay, today, ordersToday, revenueToday]);
   const cards = [
     {
       label: "Tổng người dùng",

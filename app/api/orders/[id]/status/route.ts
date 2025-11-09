@@ -5,7 +5,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
     const { id } = params
     const body = await req.json()

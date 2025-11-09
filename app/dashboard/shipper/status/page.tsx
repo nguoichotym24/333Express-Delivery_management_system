@@ -1,7 +1,7 @@
 "use client"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { statusLabel } from "@/lib/status"
 import { useAuth } from "@/lib/auth-context"
@@ -39,7 +39,14 @@ export default function StatusPage() {
       .catch(() => setOrders([]))
   }, [])
 
+  // Only allow shipper-related next statuses (targets)
   const statuses = ['picked_up','out_for_delivery','delivered','delivery_failed'] as const
+
+  // Show only actionable orders for shipper
+  const actionableOrders = useMemo(() => {
+    const allow = new Set(['waiting_for_pickup','picked_up','out_for_delivery'])
+    return orders.filter(o => allow.has(o.current_status))
+  }, [orders])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,7 +86,7 @@ export default function StatusPage() {
             <div className="bg-surface border border-default rounded-xl p-8">
               <h3 className="font-semibold mb-6">Chọn đơn hàng</h3>
               <div className="space-y-3">
-                {orders.map((order) => (
+                {actionableOrders.map((order) => (
                   <button
                     key={order.order_id}
                     type="button"

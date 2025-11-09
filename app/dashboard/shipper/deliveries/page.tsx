@@ -24,7 +24,7 @@ export default function DeliveriesPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [rows, setRows] = useState<OrderRow[]>([])
-  const [filter, setFilter] = useState<string>("all")
+  const [filter, setFilter] = useState<string>("actionable")
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [route, setRoute] = useState<any | null>(null)
 
@@ -38,12 +38,16 @@ export default function DeliveriesPage() {
   useEffect(() => {
     fetch("/api/orders/shipper")
       .then((r) => r.json())
-      .then((data) => setRows(data))
+      .then((data) => setRows(Array.isArray(data) ? data : []))
       .catch(() => setRows([]))
   }, [])
 
   const filtered = useMemo(() => {
     if (filter === "all") return rows
+    if (filter === "actionable") {
+      const allow = new Set(["waiting_for_pickup","picked_up","out_for_delivery"])
+      return rows.filter((r) => allow.has(r.current_status))
+    }
     return rows.filter((r) => r.current_status === filter)
   }, [rows, filter])
 
@@ -56,14 +60,21 @@ export default function DeliveriesPage() {
   }, [selected])
 
   const statuses = [
+    "actionable",
     "all",
     "waiting_for_pickup",
     "picked_up",
-    "in_transit_to_destination_hub",
     "out_for_delivery",
+    "in_transit_to_destination_hub",
     "delivered",
     "delivery_failed",
   ]
+
+  const renderLabel = (s: string) => {
+    if (s === "all") return "Tất cả"
+    if (s === "actionable") return "Có thể hành động"
+    return statusLabel(s)
+  }
 
   return (
     <DashboardLayout>
@@ -85,7 +96,7 @@ export default function DeliveriesPage() {
                     : "bg-background border border-default text-foreground hover:border-primary"
                 }`}
               >
-                {s === "all" ? "Tất cả" : statusLabel(s)}
+                {renderLabel(s)}
               </button>
             ))}
           </div>
@@ -138,3 +149,4 @@ export default function DeliveriesPage() {
     </DashboardLayout>
   )
 }
+

@@ -1,4 +1,5 @@
 export const STATUS_LABELS: Record<string, string> = {
+  actionable: "Có thể hành động",
   created: "Người gửi đã tạo đơn",
   waiting_for_pickup: "Chờ lấy hàng",
   picked_up: "Đã lấy hàng",
@@ -10,7 +11,7 @@ export const STATUS_LABELS: Record<string, string> = {
   out_for_delivery: "Đang giao hàng",
   delivered: "Giao hàng thành công",
   delivery_failed: "Giao hàng thất bại",
-  returned_to_destination_hub: "Trả về kho đích",
+  returned_to_destination_hub: "Trở về kho đích",
   return_in_transit: "Đang hoàn hàng",
   returned_to_origin: "Đã hoàn về kho gốc",
   cancelled: "Đã hủy",
