@@ -24,7 +24,7 @@ export default function DeliveriesPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [rows, setRows] = useState<OrderRow[]>([])
-  const [filter, setFilter] = useState<string>("actionable")
+  const [filter, setFilter] = useState<string>("all")
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [route, setRoute] = useState<any | null>(null)
 
@@ -44,10 +44,6 @@ export default function DeliveriesPage() {
 
   const filtered = useMemo(() => {
     if (filter === "all") return rows
-    if (filter === "actionable") {
-      const allow = new Set(["waiting_for_pickup","picked_up","out_for_delivery"])
-      return rows.filter((r) => allow.has(r.current_status))
-    }
     return rows.filter((r) => r.current_status === filter)
   }, [rows, filter])
 
@@ -59,20 +55,10 @@ export default function DeliveriesPage() {
       .catch(() => setRoute(null))
   }, [selected])
 
-  const statuses = [
-    "actionable",
-    "all",
-    "waiting_for_pickup",
-    "picked_up",
-    "out_for_delivery",
-    "in_transit_to_destination_hub",
-    "delivered",
-    "delivery_failed",
-  ]
+  const statuses = ["all", "picked_up", "out_for_delivery", "delivered", "delivery_failed"]
 
   const renderLabel = (s: string) => {
     if (s === "all") return "Tất cả"
-    if (s === "actionable") return "Có thể hành động"
     return statusLabel(s)
   }
 
@@ -149,4 +135,3 @@ export default function DeliveriesPage() {
     </DashboardLayout>
   )
 }
-
