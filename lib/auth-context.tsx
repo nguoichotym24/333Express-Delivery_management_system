@@ -33,11 +33,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-    setLoading(false)
+    // Optimistically hydrate from localStorage to reduce flicker
+    try {
+      const storedUser = localStorage.getItem("user")
+      if (storedUser) {
+        setUser(JSON.parse(storedUser))
+      }
+    } catch {}
+
+    // Authoritative fetch from server via cookie token
+    ;(async () => {
+      try {
+        const res = await fetch('/api/users/me', { method: 'GET' })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok) {
+          setUser(data)
+          localStorage.setItem('user', JSON.stringify(data))
+        } else {
+          setUser(null)
+          localStorage.removeItem('user')
+        }
+      } catch {
+        setUser(null)
+        localStorage.removeItem('user')
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [])
 
   const login = async (email: string, password: string) => {
