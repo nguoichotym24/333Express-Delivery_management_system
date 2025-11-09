@@ -2,7 +2,7 @@
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useAuth } from "@/lib/auth-context"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, Fragment } from "react"
 import { useRouter } from "next/navigation"
 
 type ShipperOrder = {
@@ -18,7 +18,7 @@ export default function EarningsPage() {
   const router = useRouter()
   const [rows, setRows] = useState<ShipperOrder[]>([])
   const [busy, setBusy] = useState(true)
-  const [range, setRange] = useState<'all' | 'today' | '7d' | '30d' | 'month' | 'year'>('all')
+  const [range, setRange] = useState<'today' | '7d' | '30d' | 'month' | 'year'>('today')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
 
@@ -149,7 +149,6 @@ export default function EarningsPage() {
         <div className="bg-surface border border-default rounded-xl p-4">
           <div className="flex flex-wrap gap-2">
             {([
-              { k: 'all', label: 'Tất cả' },
               { k: 'today', label: 'Hôm nay' },
               { k: '7d', label: '7 ngày' },
               { k: '30d', label: '30 ngày' },
@@ -229,14 +228,54 @@ export default function EarningsPage() {
                         </tr>
                       ))
                   : breakdown.map((m, index) => (
-                      <tr key={index} className="border-b border-default hover:bg-background transition-colors">
+                    <Fragment key={(m as any).key ?? index}>
+                      <tr className="border-b border-default hover:bg-background transition-colors">
                         <td className="px-6 py-4 text-sm font-medium">{m.label}</td>
                         <td className="px-6 py-4 text-sm">{m.deliveries}</td>
                         <td className="px-6 py-4 text-sm font-medium text-primary">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(m.revenue || 0))}</td>
                         <td className="px-6 py-4 text-sm font-medium text-yellow-400">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(m.commission || 0))}</td>
                         <td className="px-6 py-4 text-sm font-medium text-green-400">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(m.net || 0))}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <button className="text-primary hover:underline" onClick={() => setDetailKey(detailKey === (m as any).key ? null : (m as any).key)}>
+                            {detailKey === (m as any).key ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+                          </button>
+                        </td>
                       </tr>
-                    ))}
+                      {detailKey === (m as any).key && (
+                        <tr className="border-b border-default bg-background/50">
+                          <td colSpan={6} className="px-6 py-4">
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="text-secondary">
+                                    <th className="text-left py-2">Mã vận đơn</th>
+                                    <th className="text-left py-2">Phí vận chuyển</th>
+                                    <th className="text-left py-2">Thời gian giao</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {deliveredInWindow
+                                    .filter(o => {
+                                      const d = new Date(o.delivered_at || o.created_at)
+                                      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+                                      return key === (m as any).key
+                                    })
+                                    .sort((a, b) => new Date(b.delivered_at || b.created_at).getTime() - new Date(a.delivered_at || a.created_at).getTime())
+                                    .map((o, idx2) => (
+                                      <tr key={idx2} className="border-t border-default">
+                                        <td className="py-2 font-medium text-primary">{(o as any).tracking_code || 'N/A'}</td>
+                                        <td className="py-2">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(Number(o.shipping_fee || 0)))}</td>
+                                        <td className="py-2 text-secondary">{new Date(o.delivered_at || o.created_at).toLocaleString('vi-VN')}</td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
               </tbody>
             </table>
           </div>
