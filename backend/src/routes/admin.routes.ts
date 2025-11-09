@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import { requireAuth, requireRole } from '../middleware/auth'
-import { listUsersHandler, analyticsHandler, listFeeRulesHandler, usersCountHandler, createUserAdminHandler, updateUserAdminHandler, deleteUserAdminHandler, createFeeRuleHandler, updateFeeRuleHandler, deleteFeeRuleHandler, createWarehouseAdminHandler, updateWarehouseAdminHandler, deleteWarehouseAdminHandler } from '../controllers/admin.controller'
+import { listUsersHandler, analyticsHandler, listFeeRulesHandler, usersCountHandler, createUserAdminHandler, updateUserAdminHandler, deleteUserAdminHandler, createFeeRuleHandler, updateFeeRuleHandler, deleteFeeRuleHandler, createWarehouseAdminHandler, updateWarehouseAdminHandler, deleteWarehouseAdminHandler, getUserAdminHandler } from '../controllers/admin.controller'
 
 const router = Router()
 
 router.use(requireAuth, requireRole('admin'))
 router.get('/users', listUsersHandler)
 router.get('/users/count', usersCountHandler)
+router.get('/users/:id', getUserAdminHandler)
 router.post('/users', createUserAdminHandler)
 router.patch('/users/:id', updateUserAdminHandler)
 router.delete('/users/:id', deleteUserAdminHandler)

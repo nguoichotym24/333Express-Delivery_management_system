@@ -302,6 +302,19 @@ export async function usersCountHandler(_req: Request, res: Response) {
   })
 }
 
+// Get single user detail (admin)
+export async function getUserAdminHandler(req: Request, res: Response) {
+  const id = Number(req.params.id)
+  if (!id) return res.status(400).json({ error: 'Invalid user id' })
+  const [rows] = await pool.query(
+    'SELECT user_id AS id, email, name, role, phone, address, warehouse_id, created_at FROM users WHERE user_id = ? LIMIT 1',
+    [id]
+  )
+  const user = (rows as any[])[0]
+  if (!user) return res.status(404).json({ error: 'User not found' })
+  return res.json(user)
+}
+
 const ALLOWED_ROLES = new Set(['customer','warehouse','shipper','admin'])
 
 export async function createUserAdminHandler(req: Request, res: Response) {

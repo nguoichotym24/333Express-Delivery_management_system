@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 
 type ShipperOrder = {
+  tracking_code?: string
   shipping_fee: number
   current_status: string
   created_at: string
@@ -98,6 +99,33 @@ export default function EarningsPage() {
     return Array.from(map.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([, v]) => v)
   }, [deliveredInWindow])
 
+  // Dynamic breakdown for table: by day for today/7d/30d/month, by month for year/all
+  const breakdown = useMemo(() => {
+    const COMMISSION_RATE = 0.25
+    type Row = { key: string; label: string; deliveries: number; revenue: number; commission: number; net: number }
+    const map = new Map<string, Row>()
+    const byDay = range === 'today' || range === '7d' || range === '30d' || range === 'month'
+    for (const o of deliveredInWindow) {
+      const d = new Date(o.delivered_at || o.created_at)
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      const key = byDay ? `${y}-${m}-${dd}` : `${y}-${m}`
+      const label = byDay ? `${dd}/${m}/${y}` : `Tháng ${Number(m)}/${y}`
+      if (!map.has(key)) map.set(key, { key, label, deliveries: 0, revenue: 0, commission: 0, net: 0 })
+      const rec = map.get(key)!
+      rec.deliveries += 1
+      rec.revenue += Number(o.shipping_fee || 0)
+      rec.commission = rec.revenue * COMMISSION_RATE
+      rec.net = rec.revenue - rec.commission
+    }
+    const rows = Array.from(map.values())
+    rows.sort((a, b) => (a.key < b.key ? 1 : -1))
+    return rows
+  }, [deliveredInWindow, range])
+
+  const [detailKey, setDetailKey] = useState<string | null>(null)
+
   const totals = useMemo(() => {
     const t = { deliveries: 0, revenue: 0, commission: 0, net: 0 }
     for (const m of monthly) {
@@ -157,7 +185,17 @@ export default function EarningsPage() {
           ].map((stat, index) => (
             <div key={index} className={`${stat.color} rounded-lg p-6 border border-default`}>
               <p className="text-secondary text-sm mb-2">{stat.label}</p>
-              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-2xl font-bold">
+                {
+                  index === 0
+                    ? (busy ? '...' : String(totals.deliveries))
+                    : index === 1
+                      ? (busy ? '...' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(totals.revenue || 0)))
+                      : index === 2
+                        ? (busy ? '...' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(totals.commission || 0)))
+                        : (busy ? '...' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(totals.net || 0)))
+                }
+              </p>
             </div>
           ))}
         </div>
@@ -166,24 +204,39 @@ export default function EarningsPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-default">
+                <tr className="border-b border-default" hidden={range === 'today'}>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Tháng</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Số giao hàng</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Doanh thu</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Hoa hồng (25%)</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Thu nhập ròng (75%)</th>
                 </tr>
+                <tr className="border-b border-default" hidden={range !== 'today'}>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">MÃ vận đơn</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Phí vận chuyển</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Thời gian giao</th>
+                </tr>
               </thead>
               <tbody>
-                {monthly.map((m, index) => (
-                  <tr key={index} className="border-b border-default hover:bg-background transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium">{m.month}</td>
-                    <td className="px-6 py-4 text-sm">{m.deliveries}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-primary">{(m.revenue / 1_000_000).toFixed(2)}M</td>
-                    <td className="px-6 py-4 text-sm font-medium text-yellow-400">{(m.commission / 1_000_000).toFixed(2)}M</td>
-                    <td className="px-6 py-4 text-sm font-medium text-green-400">{(m.net / 1_000_000).toFixed(2)}M</td>
-                  </tr>
-                ))}
+                {range === 'today'
+                  ? [...deliveredInWindow]
+                      .sort((a, b) => new Date(b.delivered_at || b.created_at).getTime() - new Date(a.delivered_at || a.created_at).getTime())
+                      .map((o, idx) => (
+                        <tr key={idx} className="border-b border-default hover:bg-background transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium text-primary">{(o as any).tracking_code || (new Date(o.delivered_at || o.created_at).toISOString().slice(0,10).replaceAll('-', '') + '-' + String(idx+1).padStart(4,'0'))}</td>
+                          <td className="px-6 py-4 text-sm font-medium">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(Number(o.shipping_fee || 0)))}</td>
+                          <td className="px-6 py-4 text-sm text-secondary">{new Date(o.delivered_at || o.created_at).toLocaleString('vi-VN')}</td>
+                        </tr>
+                      ))
+                  : breakdown.map((m, index) => (
+                      <tr key={index} className="border-b border-default hover:bg-background transition-colors">
+                        <td className="px-6 py-4 text-sm font-medium">{m.label}</td>
+                        <td className="px-6 py-4 text-sm">{m.deliveries}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-primary">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(m.revenue || 0))}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-yellow-400">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(m.commission || 0))}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-green-400">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Math.round(m.net || 0))}</td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
