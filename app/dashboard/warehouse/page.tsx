@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { QrCode, Boxes, UserCheck, PackageSearch } from "lucide-react"
 
 export default function WarehouseDashboard() {
   return (
@@ -16,7 +17,7 @@ export default function WarehouseDashboard() {
         <div className="grid md:grid-cols-2 gap-6">
           <Link href="/dashboard/warehouse/receive">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><QrCode className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Nhận hàng</h3>
               <p className="text-secondary mb-4 text-sm">Quét mã vận đơn để nhận hàng từ người gửi</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Nhận hàng</Button>
@@ -25,7 +26,7 @@ export default function WarehouseDashboard() {
 
           <Link href="/dashboard/warehouse/sorting">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><Boxes className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Phân loại hàng</h3>
               <p className="text-secondary mb-4 text-sm">Phân loại theo khu vực giao hàng</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Phân loại</Button>
@@ -34,7 +35,7 @@ export default function WarehouseDashboard() {
 
           <Link href="/dashboard/warehouse/assign">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><UserCheck className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Phân công Shipper</h3>
               <p className="text-secondary mb-4 text-sm">Gán đơn hàng cho shipper trong khu vực</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Phân công</Button>
@@ -43,7 +44,7 @@ export default function WarehouseDashboard() {
 
           <Link href="/dashboard/warehouse/tracking">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><PackageSearch className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Theo dõi hàng</h3>
               <p className="text-secondary mb-4 text-sm">Theo dõi trạng thái hàng trong kho</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Theo dõi</Button>

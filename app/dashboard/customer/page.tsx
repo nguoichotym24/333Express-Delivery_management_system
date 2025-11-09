@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, Search, Clock } from "lucide-react"
 
 type Order = {
   order_id: number
@@ -97,7 +97,9 @@ export default function CustomerDashboard() {
 
           <Link href="/dashboard/customer/tracking">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center">
+                <Search className="w-6 h-6 text-background" />
+              </div>
               <h3 className="text-xl font-semibold mb-2">Theo dõi đơn hàng</h3>
               <p className="text-secondary mb-4">Tìm kiếm và theo dõi đơn hàng của bạn</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Theo dõi</Button>
@@ -106,7 +108,9 @@ export default function CustomerDashboard() {
 
           <Link href="/dashboard/customer/history">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-background" />
+              </div>
               <h3 className="text-xl font-semibold mb-2">Lịch sử mua hàng</h3>
               <p className="text-secondary mb-4">Xem tất cả các đơn hàng trước đây</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem lịch sử</Button>
@@ -117,4 +121,3 @@ export default function CustomerDashboard() {
     </DashboardLayout>
   )
 }
-

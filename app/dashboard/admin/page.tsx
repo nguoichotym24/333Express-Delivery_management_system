@@ -3,6 +3,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Users, BarChart3, Settings } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 type DayAgg = { day: string; orders: number; revenue: number };
 
@@ -102,7 +103,7 @@ export default function AdminDashboard() {
         <div className="grid md:grid-cols-3 gap-6">
           <Link href="/dashboard/admin/users">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><Users className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Quản lý người dùng</h3>
               <p className="text-secondary mb-4 text-sm">
                 Thêm, xóa, phân quyền người dùng
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
 
           <Link href="/dashboard/admin/analytics">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><BarChart3 className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Thống kê hệ thống</h3>
               <p className="text-secondary mb-4 text-sm">
                 Xem biểu đồ và thống kê toàn hệ thống
@@ -128,7 +129,7 @@ export default function AdminDashboard() {
 
           <Link href="/dashboard/admin/settings">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><Settings className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Cấu hình hệ thống</h3>
               <p className="text-secondary mb-4 text-sm">
                 Cấu hình phí, tuyến đường, v.v.

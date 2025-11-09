@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Package, CheckCircle, BarChart3, Clock } from "lucide-react"
 
 type OrderRow = { order_id: number; current_status: string }
 
@@ -71,7 +72,7 @@ export default function ShipperDashboard() {
         <div className="grid md:grid-cols-2 gap-6">
           <Link href="/dashboard/shipper/deliveries">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><Package className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Danh sách giao hàng</h3>
               <p className="text-secondary mb-4 text-sm">Xem các đơn được giao cho bạn</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem danh sách</Button>
@@ -80,7 +81,7 @@ export default function ShipperDashboard() {
 
           <Link href="/dashboard/shipper/status">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><CheckCircle className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Cập nhật trạng thái</h3>
               <p className="text-secondary mb-4 text-sm">Cập nhật trạng thái giao hàng</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Cập nhật</Button>
@@ -89,7 +90,7 @@ export default function ShipperDashboard() {
 
           <Link href="/dashboard/shipper/earnings">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><BarChart3 className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Thống kê thu nhập</h3>
               <p className="text-secondary mb-4 text-sm">Xem thu nhập và hoa hồng</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem thu nhập</Button>
@@ -98,7 +99,7 @@ export default function ShipperDashboard() {
 
           <Link href="/dashboard/shipper/history">
             <div className="bg-surface border border-default rounded-xl p-8 hover:border-primary transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary rounded-lg mb-4"></div>
+              <div className="w-12 h-12 bg-primary rounded-lg mb-4 flex items-center justify-center"><Clock className="w-6 h-6 text-background" /></div>
               <h3 className="text-xl font-semibold mb-2">Lịch sử giao hàng</h3>
               <p className="text-secondary mb-4 text-sm">Xem lịch sử giao hàng cá nhân</p>
               <Button className="bg-primary text-background hover:bg-[#00A8CC]">Xem lịch sử</Button>
@@ -109,4 +110,3 @@ export default function ShipperDashboard() {
     </DashboardLayout>
   )
 }
-
