@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Check, CheckCircle, XCircle, Truck, MapPin, Clock, RotateCcw, AlertTriangle, FilePlus, PackageCheck, Bolt } from "lucide-react"
 import { useParams } from "next/navigation"
 import { statusLabel } from "@/lib/status"
 
@@ -95,6 +95,67 @@ export default function TrackingPage() {
     })
   }, [order])
 
+  const themeFor = (code: string) => {
+    const danger = new Set(["delivery_failed", "cancelled", "lost"])
+    const success = new Set(["delivered", "returned_to_origin"]) // success-like
+    const progress = new Set([
+      "out_for_delivery",
+      "in_transit_to_sorting_center",
+      "in_transit_to_destination_hub",
+      "return_in_transit",
+    ])
+    const waiting = new Set(["created", "waiting_for_pickup", "picked_up"]) 
+    const arrived = new Set(["arrived_at_origin_hub", "arrived_at_sorting_hub", "arrived_at_destination_hub", "returned_to_destination_hub"]) 
+
+    if (danger.has(code)) return { bg: "bg-red-500/10", text: "text-red-600" }
+    if (success.has(code)) return { bg: "bg-green-500/10", text: "text-green-600" }
+    if (arrived.has(code)) return { bg: "bg-purple-500/10", text: "text-purple-600" }
+    if (progress.has(code)) return { bg: "bg-blue-500/10", text: "text-blue-600" }
+    if (waiting.has(code)) return { bg: "bg-amber-500/10", text: "text-amber-600" }
+    return { bg: "bg-primary/10", text: "text-primary" }
+  }
+
+  const iconFor = (code: string) => {
+    if (code === "lost") return AlertTriangle
+    if (code === "delivery_failed" || code === "cancelled") return XCircle
+    if (code === "delivered") return CheckCircle
+    if (code === "out_for_delivery" || code === "in_transit_to_sorting_center" || code === "in_transit_to_destination_hub") return Truck
+    if (code === "picked_up") return PackageCheck
+    if (code.startsWith("arrived_at") || code === "returned_to_destination_hub") return MapPin
+    if (code === "waiting_for_pickup") return Clock
+    if (code === "return_in_transit" || code === "returned_to_origin") return RotateCcw
+    if (code === "created") return FilePlus
+    return Bolt
+  }
+
+  const circleThemeFor = (code: string) => {
+    if (code === "delivery_failed" || code === "cancelled" || code === "lost") {
+      return { bg: "bg-red-500", ring: "ring-red-500/30", text: "text-white", line: "bg-red-500/40" }
+    }
+    if (code === "delivered" || code === "returned_to_origin") {
+      return { bg: "bg-green-500", ring: "ring-green-500/30", text: "text-white", line: "bg-green-500/40" }
+    }
+    if (
+      code === "out_for_delivery" ||
+      code === "in_transit_to_sorting_center" ||
+      code === "in_transit_to_destination_hub"
+    ) {
+      return { bg: "bg-blue-500", ring: "ring-blue-500/30", text: "text-white", line: "bg-blue-500/40" }
+    }
+    if (
+      code === "arrived_at_origin_hub" ||
+      code === "arrived_at_sorting_hub" ||
+      code === "arrived_at_destination_hub" ||
+      code === "returned_to_destination_hub"
+    ) {
+      return { bg: "bg-purple-500", ring: "ring-purple-500/30", text: "text-white", line: "bg-purple-500/40" }
+    }
+    if (code === "created" || code === "waiting_for_pickup" || code === "picked_up") {
+      return { bg: "bg-amber-500", ring: "ring-amber-500/30", text: "text-white", line: "bg-amber-500/40" }
+    }
+    return { bg: "bg-primary", ring: "ring-primary/30", text: "text-background", line: "bg-primary/40" }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -137,7 +198,14 @@ export default function TrackingPage() {
         <div className="grid md:grid-cols-2 gap-8">
           <div className="bg-surface border border-default rounded-xl p-6">
             <p className="text-secondary text-sm mb-2">Trạng thái hiện tại</p>
-            <p className="text-xl font-semibold">{statusLabel(order.current_status)}</p>
+            {(() => { const t = themeFor(order.current_status); const Icon = iconFor(order.current_status); return (
+              <p className="text-xl font-semibold">
+                <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${t.bg} ${t.text}`}>
+                  <Icon className="w-4 h-4" />
+                  {statusLabel(order.current_status)}
+                </span>
+              </p>
+            )})()}
           </div>
           <div className="bg-surface border border-default rounded-xl p-6">
             <p className="text-secondary text-sm mb-2">Thời gian tạo</p>
@@ -151,8 +219,20 @@ export default function TrackingPage() {
             {timeline.map((e, i) => (
               <div key={i} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <div className="w-4 h-4 bg-primary rounded-full"></div>
-                  {i < timeline.length - 1 && <div className="w-0.5 h-10 bg-default mt-2"></div>}
+                  {(() => {
+                    const Icon = iconFor(e.status)
+                    const dot = circleThemeFor(e.status)
+                    return (
+                      <>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ring-2 ${dot.bg} ${dot.text} ${dot.ring}`}>
+                          <Icon className="w-3 h-3" />
+                        </div>
+                        {i < timeline.length - 1 && (
+                          <div className={`w-px h-10 my-1 ${dot.line}`}></div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
                 <div className="pb-4">
                   <p className="font-medium">{e.label}</p>
@@ -183,4 +263,3 @@ export default function TrackingPage() {
     </div>
   )
 }
-
