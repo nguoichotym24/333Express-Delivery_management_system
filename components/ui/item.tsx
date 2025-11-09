@@ -44,6 +44,13 @@ const itemVariants = cva(
         sm: 'py-3 px-4 gap-2.5',
       },
     },
+    compoundVariants: [
+      {
+        variant: ['default', 'outline', 'muted'],
+        class:
+          'animate-in fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none transition-transform duration-150 ease-out hover:-translate-y-0.5 active:translate-y-0 motion-reduce:transform-none',
+      },
+    ],
     defaultVariants: {
       variant: 'default',
       size: 'default',

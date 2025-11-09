@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { Toaster } from "@/components/ui/toaster";
+import { RouteTransition } from "@/components/layout/route-transition";
 
 const interSans = Inter({
   variable: "--font-inter-sans",
@@ -38,7 +39,9 @@ export default function RootLayout({
       <body className={`${interSans.className} bg-background text-foreground`}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <RouteTransition>
+              {children}
+            </RouteTransition>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

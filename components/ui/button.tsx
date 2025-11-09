@@ -29,6 +29,13 @@ const buttonVariants = cva(
         'icon-lg': 'size-10',
       },
     },
+    compoundVariants: [
+      {
+        variant: ['default', 'destructive', 'outline', 'secondary'],
+        class:
+          'transition-transform duration-200 will-change-transform hover:-translate-y-0.5 active:translate-y-0 motion-reduce:transform-none',
+      },
+    ],
     defaultVariants: {
       variant: 'default',
       size: 'default',
