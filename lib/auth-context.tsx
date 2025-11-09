@@ -74,10 +74,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (data: Partial<User>) => {
     if (!user) return
-
-    const updatedUser = { ...user, ...data }
-    setUser(updatedUser)
-    localStorage.setItem("user", JSON.stringify(updatedUser))
+    const payload: any = {}
+    if (data.name !== undefined) payload.name = data.name
+    if (data.phone !== undefined) payload.phone = data.phone
+    if (data.address !== undefined) payload.address = data.address
+    if (data.password) payload.password = (data as any).password
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const updated = await res.json()
+      if (!res.ok) throw new Error(updated?.error || 'Update failed')
+      const updatedUser = { ...user, ...updated }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    } catch (e) {
+      throw e
+    }
   }
 
   return (
