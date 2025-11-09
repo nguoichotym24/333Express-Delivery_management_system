@@ -23,7 +23,7 @@ export function Navbar() {
   return (
     <nav className="bg-surface border-b border-default h-16 flex items-center justify-between px-6">
       <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-        <Image src="/333-r-logo.png" alt="TRIPLE3 Express Logo" width={93} height={30} className="w-43 h-14 rounded-lg flex items-center justify-center" />
+        <Image src="/333-r-logo.png" alt="TRIPLE3 Express Logo" width={93} height={30} className="w-43 h-14 rounded-lg flex items-center justify-center vt-logo" />
         <span className="font-bold text-lg hidden sm:inline"></span>
       </Link>
 

@@ -45,13 +45,13 @@ export function Sidebar() {
     <aside className="w-64 bg-surface border-r border-default h-[calc(100vh-4rem)] overflow-y-auto">
       <div className="p-6">
         <h2 className="text-sm font-semibold text-secondary mb-4">MENU</h2>
-        <nav className="space-y-2">
+        <nav className="space-y-2 stagger-children">
           {items.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "block px-4 py-2 rounded-lg text-sm transition-colors",
+                "block px-4 py-2 rounded-lg text-sm transition-colors transition-transform duration-200 hover:translate-x-0.5",
                 pathname === item.href
                   ? "bg-primary text-background font-medium"
                   : "text-foreground hover:bg-surface-light",

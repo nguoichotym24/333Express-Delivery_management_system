@@ -49,7 +49,7 @@ export default function Home() {
                   alt="TRIPLE3 Express Logo"
                   width={172}
                   height={56}
-                  className="rounded-md"
+                  className="rounded-md vt-logo"
                 />
               </span>
             </div>
@@ -78,11 +78,11 @@ export default function Home() {
       <section className="bg-gradient-to-b from-surface to-background py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-balance">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-balance animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
               Giao hàng <span className="text-primary">nhanh chóng</span> và{" "}
               <span className="text-primary">an toàn</span>
             </h1>
-            <p className="text-xl text-secondary mb-8 text-balance max-w-2xl mx-auto">
+            <p className="text-xl text-secondary mb-8 text-balance max-w-2xl mx-auto animate-in fade-in-0 slide-in-from-bottom-1 duration-300 delay-100">
               Nền tảng quản lý vận chuyển toàn diện. Theo dõi đơn hàng, tạo đơn mới, và quản lý giao hàng một cách dễ
               dàng
             </p>
@@ -136,7 +136,7 @@ export default function Home() {
       <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-16">Tính năng chính</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 stagger-children">
             {[
               {
                 icon: Package,
@@ -189,7 +189,7 @@ export default function Home() {
       <section className="py-20 bg-surface border-y border-default">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-16">Cách hoạt động</h2>
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-4 gap-8 stagger-children">
             {[
               {
                 step: "1",
