@@ -31,6 +31,8 @@ export default function AnalyticsPage() {
   ]
   const COLORS = ["#dc2626", "#f97316", "#eab308"]
 
+  const formatVND = (n: number) => Number(n || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -48,7 +50,7 @@ export default function AnalyticsPage() {
           ].map((stat, i) => (
             <div key={i} className={`${stat.color} rounded-lg p-6 border border-default`}>
               <p className="text-secondary text-sm mb-2">{stat.label}</p>
-              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-2xl font-bold">{i === 1 ? formatVND(totalRevenue) : i === 2 ? formatVND(totalCommission) : stat.value}</p>
             </div>
           ))}
         </div>
@@ -61,7 +63,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis dataKey="month" stroke="#888" />
                 <YAxis stroke="#888" />
-                <Tooltip contentStyle={{ backgroundColor: '#1a1f26', border: '1px solid #333' }} formatter={(value) => `${(Number(value) / 1_000_000).toFixed(0)}M`} />
+                <Tooltip contentStyle={{ backgroundColor: '#1a1f26', border: '1px solid #333' }} formatter={(value) => formatVND(Number(value))} />
                 <Legend />
                 <Line type="monotone" dataKey="revenue" stroke="#dc2626" strokeWidth={2} dot={{ fill: '#dc2626' }} name="Doanh thu" />
               </LineChart>
@@ -88,10 +90,10 @@ export default function AnalyticsPage() {
             <h3 className="font-semibold mb-6">Phân bổ doanh thu</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie data={revenueDistribution} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${(Number(value) / 1_000_000).toFixed(0)}M`} outerRadius={80} fill="#8884d8" dataKey="value">
+                <Pie data={revenueDistribution} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${formatVND(Number(value))}`} outerRadius={80} fill="#8884d8" dataKey="value">
                   {COLORS.map((color, index) => (<Cell key={`cell-${index}`} fill={color} />))}
                 </Pie>
-                <Tooltip formatter={(value) => `${(Number(value) / 1_000_000).toFixed(0)}M`} />
+                <Tooltip formatter={(value) => formatVND(Number(value))} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -103,7 +105,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis dataKey="month" stroke="#888" />
                 <YAxis stroke="#888" />
-                <Tooltip contentStyle={{ backgroundColor: '#1a1f26', border: '1px solid #333' }} formatter={(value) => `${(Number(value) / 1_000_000).toFixed(0)}M`} />
+                <Tooltip contentStyle={{ backgroundColor: '#1a1f26', border: '1px solid #333' }} formatter={(value) => formatVND(Number(value))} />
                 <Legend />
                 <Bar dataKey="revenue" fill="#dc2626" name="Doanh thu" />
                 <Bar dataKey="commission" fill="#f97316" name="Hoa hồng" />
@@ -115,4 +117,3 @@ export default function AnalyticsPage() {
     </DashboardLayout>
   )
 }
-

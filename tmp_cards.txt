@@ -1,0 +1,22 @@
+const cards = [
+    {
+      label: "Tổng người dùng",
+      value: usersCount.toLocaleString(),
+      color: "bg-blue-500/10 text-blue-400",
+    },
+    {
+      label: "Đơn hàng hôm nay",
+      value: todayAgg.orders.toLocaleString(),
+      color: "bg-yellow-500/10 text-yellow-400",
+    },
+    {
+      label: "Doanh thu hôm nay",
+      value: `${(todayAgg.revenue / 1_000_000).toFixed(1)}M`,
+      color: "bg-primary/10 text-primary",
+    },
+    {
+      label: "Tổng doanh thu",
+      value: `${(totalRevenue / 1_000_000_000).toFixed(1)}B`,
+      color: "bg-green-500/10 text-green-400",
+    },
+  ];

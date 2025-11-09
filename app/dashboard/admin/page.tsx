@@ -54,6 +54,8 @@ export default function AdminDashboard() {
       revenue: fromSeries?.revenue ?? revenueToday,
     };
   }, [byDay, today, ordersToday, revenueToday]);
+  const formatVND = (n: number) =>
+    Number(n || 0).toLocaleString("vi-VN", { style: "currency", currency: "VND" });
   const cards = [
     {
       label: "Tổng người dùng",
@@ -67,12 +69,12 @@ export default function AdminDashboard() {
     },
     {
       label: "Doanh thu hôm nay",
-      value: `${(todayAgg.revenue / 1_000_000).toFixed(1)}M`,
+      value: formatVND(todayAgg.revenue),
       color: "bg-primary/10 text-primary",
     },
     {
       label: "Tổng doanh thu",
-      value: `${(totalRevenue / 1_000_000_000).toFixed(1)}B`,
+      value: formatVND(totalRevenue),
       color: "bg-green-500/10 text-green-400",
     },
   ];

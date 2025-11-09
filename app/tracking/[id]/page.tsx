@@ -128,6 +128,14 @@ export default function TrackingPage() {
     return Bolt
   }
 
+  const latestTime = useMemo(() => {
+    try {
+      return timeline.length ? Math.max(...timeline.map((e) => e.time.getTime())) : 0
+    } catch {
+      return 0
+    }
+  }, [timeline])
+
   const circleThemeFor = (code: string) => {
     if (code === "delivery_failed" || code === "cancelled" || code === "lost") {
       return { bg: "bg-red-500", ring: "ring-red-500/30", text: "text-white", line: "bg-red-500/40" }
@@ -224,11 +232,11 @@ export default function TrackingPage() {
                     const dot = circleThemeFor(e.status)
                     return (
                       <>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ring-2 ${dot.bg} ${dot.text} ${dot.ring}`}>
-                          <Icon className="w-3 h-3" />
+                        <div className={`rounded-full flex items-center justify-center ${dot.bg} ${dot.text} ${dot.ring} ${e.time.getTime() === latestTime ? "w-8 h-8 ring-4 shadow-md" : "w-6 h-6 ring-2"}`}>
+                          <Icon className={e.time.getTime() === latestTime ? "w-4 h-4" : "w-3 h-3"} />
                         </div>
                         {i < timeline.length - 1 && (
-                          <div className={`w-px h-10 my-1 ${dot.line}`}></div>
+                          <div className={`w-px ${e.time.getTime() === latestTime ? "h-12" : "h-10"} my-1 ${dot.line}`}></div>
                         )}
                       </>
                     )
