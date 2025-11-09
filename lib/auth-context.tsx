@@ -63,6 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
+    try {
+      // Fire-and-forget server-side cookie clear
+      fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+    } catch {}
     setUser(null)
     localStorage.removeItem("user")
     router.push("/")

@@ -28,11 +28,27 @@ export default function SignupPage() {
     }
     setLoading(true)
     try {
-      // Tạm thời mô phỏng đăng ký (giữ nguyên hành vi cũ)
-      localStorage.setItem("user", JSON.stringify({ id: `user_${Date.now()}`, email: formData.email, name: formData.name, role: "customer", phone: formData.phone }))
-      router.push("/dashboard/customer")
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+      }
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data?.error || 'Đăng ký thất bại. Vui lòng thử lại.')
+        return
+      }
+      // Save returned user and redirect to customer dashboard
+      localStorage.setItem('user', JSON.stringify(data))
+      router.push('/dashboard/customer')
     } catch {
-      setError("Đăng ký thất bại. Vui lòng thử lại.")
+      setError('Đăng ký thất bại. Vui lòng thử lại.')
     } finally {
       setLoading(false)
     }
