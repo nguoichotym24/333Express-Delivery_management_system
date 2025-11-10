@@ -14,7 +14,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push("/login")
+      try { router.replace("/login") } catch {}
+      // Safety fallback if the client router is stuck
+      const id = setTimeout(() => {
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
+          window.location.assign('/login')
+        }
+      }, 500)
+      return () => clearTimeout(id)
     }
   }, [isAuthenticated, loading, router])
 
@@ -30,7 +37,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return null
+    // Show a small redirecting spinner instead of a blank screen
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-secondary">Đang chuyển hướng…</p>
+        </div>
+      </div>
+    )
   }
 
   return (

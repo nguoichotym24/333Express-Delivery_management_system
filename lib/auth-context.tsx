@@ -89,9 +89,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fire-and-forget server-side cookie clear
       fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     } catch {}
+    // Clear client state immediately
     setUser(null)
-    localStorage.removeItem("user")
-    router.push("/")
+    try { localStorage.removeItem('user') } catch {}
+    // Prefer replace to avoid going back into a protected page
+    try { router.replace('/login') } catch {}
+    // Ensure any stale caches are dropped
+    try { router.refresh() } catch {}
+    // Hard fallback in case navigation is stuck
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        if (window.location.pathname.startsWith('/dashboard')) {
+          window.location.assign('/login')
+        }
+      }, 300)
+    }
   }
 
   const updateProfile = async (data: Partial<User>) => {
