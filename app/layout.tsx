@@ -15,9 +15,10 @@ const interSans = Inter({
 
 export const metadata: Metadata = {
   icons: {
-    icon: "333.png",
-    apple: "333.png",
-    shortcut: "333.png",
+    // Use absolute paths so nested routes resolve the favicon correctly
+    icon: "/333.png",
+    apple: "/333.png",
+    shortcut: "/333.png",
   },
   title: "333EXPRESS",
   description: "Modern delivery management platform",
@@ -39,9 +40,7 @@ export default function RootLayout({
       <body className={`${interSans.className} bg-background text-foreground`}>
         <ThemeProvider>
           <AuthProvider>
-            <RouteTransition>
-              {children}
-            </RouteTransition>
+            <RouteTransition>{children}</RouteTransition>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
